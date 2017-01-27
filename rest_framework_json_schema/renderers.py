@@ -76,7 +76,7 @@ class JSONAPIRenderer(JSONRenderer):
         if links:
             rendered['links'] = links
 
-        return super().render(rendered, media_type, renderer_context)
+        return super(JSONAPIRenderer, self).render(rendered, media_type, renderer_context)
 
 
 class JSONAPITestRenderer(JSONRenderer):

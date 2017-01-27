@@ -9,7 +9,7 @@ from rest_framework_json_schema.test_support.views import ArtistViewSet
 class JSONAPINegotiationTestCase(APISimpleTestCase):
     def test_media_params(self):
         """
-        Servers MUST respond with a 406 Not Acceptable status code if a request’s Accept header
+        Servers MUST respond with a 406 Not Acceptable status code if a request's Accept header
         contains the JSON API media type and all instances of that media type are
         modified with media type parameters.
         """
