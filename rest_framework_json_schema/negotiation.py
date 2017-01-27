@@ -10,7 +10,7 @@ class JSONAPIContentNegotiation(DefaultContentNegotiation):
     request specifies the header Content-Type: application/vnd.api+json
     with any media type parameters.
 
-    Servers MUST respond with a 406 Not Acceptable status code if a request’s
+    Servers MUST respond with a 406 Not Acceptable status code if a request's
     Accept header contains the JSON API media type and all instances of that
     media type are modified with media type parameters.
     """
