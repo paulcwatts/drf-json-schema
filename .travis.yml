@@ -25,5 +25,3 @@ matrix:
   allow_failures:
     - env: DJANGO='django==1.11a1'
     - env: DJANGO='https://github.com/django/django/archive/master.tar.gz'
-# after_success:
-#   - bash <(curl -s https://codecov.io/bash)
