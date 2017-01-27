@@ -57,8 +57,7 @@ TEMPLATES = [
         'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
-            'context_processors': [os.path.join(BASE_DIR, 'templates')]
-            ,
+            'context_processors': [os.path.join(BASE_DIR, 'templates')],
         },
     },
 ]
