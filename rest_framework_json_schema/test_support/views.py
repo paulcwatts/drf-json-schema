@@ -4,7 +4,7 @@ from rest_framework.decorators import detail_route
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .serializers import ArtistSerializer, AlbumSerializer, get_artists, get_albums
+from .serializers import ArtistSerializer, AlbumSerializer, TrackSerializer, get_artists, get_albums, get_tracks
 from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
 from rest_framework_json_schema.pagination import JSONAPILimitOffsetPagination
 from rest_framework_json_schema.parsers import JSONAPIParser
@@ -33,11 +33,6 @@ class ArtistViewSet(BaseViewSet):
     # This is not testing pagination
     pagination_class = None
 
-    parser_classes = (JSONAPIParser,)
-    permission_classes = (AllowAny,)
-    renderer_classes = (JSONAPIRenderer,)
-    content_negotiation_class = JSONAPIContentNegotiation
-
     def get_queryset(self):
         return get_artists()
 
@@ -65,3 +60,14 @@ class AlbumViewSet(BaseViewSet):
     def related_artist(self):
         # Not currently called, just reversed.
         return Response()
+
+
+class TrackViewSet(BaseViewSet):
+    """
+    A simple ViewSet for listing or retrieving tracks.
+    """
+    serializer_class = TrackSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return get_tracks()

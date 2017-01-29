@@ -7,7 +7,13 @@ from ..schema import ResourceObject
 from ..transforms import CamelCaseTransform
 
 
-class Artist(object):
+class BaseModel(object):
+    @property
+    def pk(self):
+        return self.id
+
+
+class Artist(BaseModel):
     def __init__(self, id, first_name, last_name):
         self.id = id
         self.first_name = first_name
@@ -17,20 +23,24 @@ class Artist(object):
         self.first_name = first_name
         self.last_name = last_name
 
-    @property
-    def pk(self):
-        return self.id
 
-
-class Album(object):
+class Album(BaseModel):
     def __init__(self, id, album_name, artist):
         self.id = id
         self.album_name = album_name
         self.artist = artist
 
     @property
-    def pk(self):
-        return self.id
+    def tracks(self):
+        return [track for track in TRACKS if track.album.id == self.id]
+
+
+class Track(BaseModel):
+    def __init__(self, id, track_num, name, album):
+        self.id = id
+        self.track_num = track_num
+        self.name = name
+        self.album = album
 
 
 INITIAL_ARTISTS = [
@@ -39,7 +49,7 @@ INITIAL_ARTISTS = [
     Artist(2, 'Charles', 'Mingus'),
     Artist(3, 'Bill', 'Evans'),
     Artist(4, 'Max', 'Roach'),
-    Artist(4, 'Sun', 'Ra')
+    Artist(5, 'Sun', 'Ra')
 ]
 ARTISTS = None
 
@@ -51,6 +61,14 @@ INITIAL_ALBUMS = [
 ]
 ALBUMS = None
 
+INITIAL_TRACKS = [
+    Track(0, 1, 'Jeru', INITIAL_ALBUMS[1]),
+    Track(1, 2, 'Moon Dreams', INITIAL_ALBUMS[1]),
+    Track(2, 3, 'Venus de Milo', INITIAL_ALBUMS[1]),
+    Track(3, 4, 'Deception', INITIAL_ALBUMS[1])
+]
+TRACKS = None
+
 
 def get_artists():
     return ARTISTS
@@ -60,11 +78,17 @@ def get_albums():
     return ALBUMS
 
 
+def get_tracks():
+    return TRACKS
+
+
 def reset_data():
     global ARTISTS
     global ALBUMS
+    global TRACKS
     ARTISTS = deepcopy(INITIAL_ARTISTS)
     ALBUMS = deepcopy(INITIAL_ALBUMS)
+    TRACKS = deepcopy(INITIAL_TRACKS)
 
 
 reset_data()
@@ -79,7 +103,14 @@ class ArtistObject(ResourceObject):
 class AlbumObject(ResourceObject):
     type = 'album'
     attributes = ('album_name',)
-    relationships = ('artist',)
+    relationships = ('artist', 'tracks')
+    transformer = CamelCaseTransform
+
+
+class TrackObject(ResourceObject):
+    type = 'track'
+    attributes = ('track_num', 'name')
+    relationships = ('album',)
     transformer = CamelCaseTransform
 
 
@@ -100,9 +131,20 @@ class ArtistSerializer(serializers.Serializer):
         return instance
 
 
+class TrackSerializer(serializers.Serializer):
+    id = serializers.CharField(required=False)
+    track_num = serializers.IntegerField()
+    name = serializers.CharField()
+    album = JSONAPIRelationshipField(serializer='rest_framework_json_schema.test_support.serializers.AlbumSerializer',
+                                     queryset=get_albums)
+
+    schema = TrackObject
+
+
 class AlbumSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     album_name = serializers.CharField()
     artist = JSONAPIRelationshipField(serializer=ArtistSerializer, queryset=get_artists)
+    tracks = JSONAPIRelationshipField(serializer=TrackSerializer, many=True, queryset=get_tracks)
 
     schema = AlbumObject

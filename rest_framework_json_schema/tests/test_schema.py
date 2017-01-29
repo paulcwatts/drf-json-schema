@@ -3,9 +3,10 @@ from django.test import SimpleTestCase, override_settings
 
 from rest_framework.test import APIRequestFactory
 
-from rest_framework_json_schema.exceptions import TypeConflict
+from rest_framework_json_schema.exceptions import TypeConflict, IncludeInvalid
 from rest_framework_json_schema.schema import ResourceObject, RelationshipObject, ResourceIdObject, LinkObject, UrlLink
 from rest_framework_json_schema.transforms import CamelCaseTransform
+from rest_framework_json_schema.utils import parse_include
 
 
 @override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
@@ -18,29 +19,31 @@ class ResourceObjectTest(SimpleTestCase):
 
     def test_default(self):
         # With no attributes, nothing is included, just the ID.
-        result = ResourceObject().render({
+        primary, included = ResourceObject().render({
             'id': '123',
             'attribute': 'ignored'
-        }, self.request)
-        self.assertEqual(result, OrderedDict((
+        }, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'unknown')
         )))
+        self.assertEqual(included, [])
 
     def test_constructor(self):
         """
         You can specify the schema using the constructor.
         """
         obj = ResourceObject(id='user_id', type='users', attributes=('name',))
-        result = obj.render({
+        primary, included = obj.render({
             'user_id': '123',
             'name': 'John'
-        }, self.request)
-        self.assertEqual(result, OrderedDict((
+        }, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
             ('attributes', OrderedDict((('name', 'John'),)))
         )))
+        self.assertEqual(included, [])
 
     def test_subclass(self):
         """
@@ -51,15 +54,16 @@ class ResourceObjectTest(SimpleTestCase):
             type = 'users'
             attributes = ('name',)
 
-        result = TestObject().render({
+        primary, included = TestObject().render({
             'user_id': '123',
             'name': 'John'
-        }, self.request)
-        self.assertEqual(result, OrderedDict((
+        }, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
             ('attributes', OrderedDict((('name', 'John'),)))
         )))
+        self.assertEqual(included, [])
 
     def test_links(self):
         """
@@ -82,8 +86,8 @@ class ResourceObjectTest(SimpleTestCase):
                 ('object', ObjectLink())
             )
 
-        result = TestObject().render({'id': '123'}, self.request)
-        self.assertEqual(result, OrderedDict((
+        primary, included = TestObject().render({'id': '123'}, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'artists'),
             ('links', OrderedDict((
@@ -94,18 +98,20 @@ class ResourceObjectTest(SimpleTestCase):
                     'meta': {'something': 'hello'}
                 }))))
         )))
+        self.assertEqual(included, [])
 
     def test_meta(self):
         """
         An optional meta object is rendered
         """
         obj = ResourceObject(type='users', meta={'foo': 'bar'})
-        result = obj.render({'id': '123'}, self.request)
-        self.assertEqual(result, OrderedDict((
+        primary, included = obj.render({'id': '123'}, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
             ('meta', {'foo': 'bar'}))
         ))
+        self.assertEqual(included, [])
 
     def test_render_relationships(self):
         """
@@ -121,29 +127,31 @@ class ResourceObjectTest(SimpleTestCase):
         # To-Many: an array of ResourceIdObjects
         obj = AlbumObject()
 
-        result = obj.render({'id': '123', 'artist': None}, self.request)
-        self.assertEqual(result, OrderedDict((
+        primary, included = obj.render({'id': '123', 'artist': None}, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
             ('relationships', OrderedDict((
                 ('artist', OrderedDict((('data', None),))),
             )))
         )))
+        self.assertEqual(included, [])
 
-        result = obj.render({'id': '123', 'artist': []}, self.request)
-        self.assertEqual(result, OrderedDict((
+        primary, included = obj.render({'id': '123', 'artist': []}, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
             ('relationships', OrderedDict((
                 ('artist', OrderedDict((('data', []),))),
             )))
         )))
+        self.assertEqual(included, [])
 
-        result = obj.render({
+        primary, included = obj.render({
             'id': '123',
             'artist': ResourceIdObject(id=5, type='artist')
-        }, self.request)
-        self.assertEqual(result, OrderedDict((
+        }, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
             ('relationships', OrderedDict((
@@ -152,15 +160,16 @@ class ResourceObjectTest(SimpleTestCase):
                 ))),
             )))
         )))
+        self.assertEqual(included, [])
 
-        result = obj.render({
+        primary, included = obj.render({
             'id': '123',
             'artist': [
                 ResourceIdObject(id=5, type='artist'),
                 ResourceIdObject(id=6, type='artist')
             ]
-        }, self.request)
-        self.assertEqual(result, OrderedDict((
+        }, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
             ('relationships', OrderedDict((
@@ -172,6 +181,7 @@ class ResourceObjectTest(SimpleTestCase):
                 ))),
             )))
         )))
+        self.assertEqual(included, [])
 
     def test_render_complex_relationship(self):
         """
@@ -194,8 +204,8 @@ class ResourceObjectTest(SimpleTestCase):
 
         obj = AlbumObject()
 
-        result = obj.render({'id': '123', 'album_artist': None}, self.request)
-        self.assertEqual(result, OrderedDict((
+        primary, included = obj.render({'id': '123', 'album_artist': None}, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
             ('relationships', OrderedDict((
@@ -209,6 +219,147 @@ class ResourceObjectTest(SimpleTestCase):
                 ))),
             )))
         )))
+        self.assertEqual(included, [])
+
+    def test_render_included(self):
+        """
+        You can render included resources
+        """
+        class ArtistObject(ResourceObject):
+            type = 'artist'
+            attributes = ('first_name', 'last_name')
+
+        class AlbumObject(ResourceObject):
+            type = 'album'
+            relationships = ('artist',)
+
+        # This a faked ResourceIdObject that allows you the schema to not know about
+        # the serializer directly.
+        class ArtistLink(ResourceIdObject):
+            def get_schema(self):
+                return ArtistObject()
+
+            def get_data(self):
+                return {
+                    'id': self.id,
+                    'first_name': 'John',
+                    'last_name': 'Coltrane'
+                }
+
+        primary, included = AlbumObject().render({
+            'id': '123',
+            'artist': ArtistLink(id=5, type='artist')
+        }, self.request, parse_include('artist'))
+        self.assertEqual(included, [
+            OrderedDict((
+                ('id', '5'),
+                ('type', 'artist'),
+                ('attributes', OrderedDict((
+                    ('first_name', 'John'),
+                    ('last_name', 'Coltrane')
+                )))
+            ))
+        ])
+
+    def test_render_included_path(self):
+        """
+        You can render included paths.
+        """
+        class ArtistObject(ResourceObject):
+            type = 'artist'
+            attributes = ('first_name', 'last_name')
+            relationships = ('albums',)
+
+        class AlbumObject(ResourceObject):
+            type = 'album'
+            attributes = ('name',)
+            relationships = ('tracks',)
+
+        class TrackObject(ResourceObject):
+            type = 'track'
+            attributes = ('name',)
+
+        class TrackLink(ResourceIdObject):
+            type = 'track'
+
+            def get_schema(self):
+                return TrackObject()
+
+            def get_data(self):
+                return {'id': self.id, 'name': self.name}
+
+        # This a faked ResourceIdObject that allows you the schema to not know about
+        # the serializer directly.
+        class AlbumLink(ResourceIdObject):
+            type = 'album'
+
+            def get_schema(self):
+                return AlbumObject()
+
+            def get_data(self):
+                return {
+                    'id': self.id,
+                    'name': self.name,
+                    'tracks': [
+                        TrackLink(id=1, name='Acknowledgement'),
+                        TrackLink(id=2, name='Resolution')
+                    ]
+                }
+
+        primary, included = ArtistObject().render({
+            'id': '123',
+            'first_name': 'John',
+            'last_name': 'Coltrane',
+            'albums': [AlbumLink(id=5, name='A Love Supreme')]
+        }, self.request, parse_include('albums.tracks'))
+        self.assertEqual(included, [
+            OrderedDict((
+                ('id', '5'),
+                ('type', 'album'),
+                ('attributes', OrderedDict((
+                    ('name', 'A Love Supreme'),
+                ))),
+                ('relationships', OrderedDict((
+                    ('tracks', OrderedDict((
+                        ('data', [
+                            OrderedDict((('id', '1'), ('type', 'track'))),
+                            OrderedDict((('id', '2'), ('type', 'track')))
+                        ]),
+                    ))),
+                )))
+            )),
+            OrderedDict((
+                ('id', '1'),
+                ('type', 'track'),
+                ('attributes', OrderedDict((
+                    ('name', 'Acknowledgement'),
+                )))
+            )),
+            OrderedDict((
+                ('id', '2'),
+                ('type', 'track'),
+                ('attributes', OrderedDict((
+                    ('name', 'Resolution'),
+                )))
+            )),
+        ])
+
+    def test_render_invalid_include(self):
+        """
+        An invalid include path throws an exception.
+        """
+        class ArtistObject(ResourceObject):
+            type = 'artist'
+            attributes = ('first_name', 'last_name')
+            relationships = ('albums',)
+
+        with self.assertRaises(IncludeInvalid):
+            ArtistObject().render({
+                'id': '123',
+                'first_name': 'John',
+                'last_name': 'Coltrane',
+                'albums': []
+            }, self.request, parse_include('invalid'))
 
     def test_transform(self):
         """
@@ -216,12 +367,12 @@ class ResourceObjectTest(SimpleTestCase):
         """
         obj = ResourceObject(type='users', attributes=('first_name', 'last_name',),
                              transformer=CamelCaseTransform)
-        result = obj.render({
+        primary, included = obj.render({
             'id': '123',
             'first_name': 'John',
             'last_name': 'Coltrane'
-        }, self.request)
-        self.assertEqual(result, OrderedDict((
+        }, self.request, {})
+        self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
             ('attributes', OrderedDict((
@@ -229,6 +380,7 @@ class ResourceObjectTest(SimpleTestCase):
                 ('lastName', 'Coltrane')
             )))
         )))
+        self.assertEqual(included, [])
 
     def test_parse(self):
         """

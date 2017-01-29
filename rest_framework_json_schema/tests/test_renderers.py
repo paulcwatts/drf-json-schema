@@ -5,7 +5,7 @@ from django.test import override_settings
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
 
 from rest_framework_json_schema.test_support.serializers import reset_data
-from rest_framework_json_schema.test_support.views import ArtistViewSet, AlbumViewSet
+from rest_framework_json_schema.test_support.views import ArtistViewSet, AlbumViewSet, TrackViewSet
 
 
 @override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
@@ -89,9 +89,9 @@ class JSONAPIRelationshipsRendererTestCase(APISimpleTestCase):
         self.view_detail = AlbumViewSet.as_view({'get': 'retrieve'})
         reset_data()
 
-    def test_to_one_empty(self):
+    def test_empty(self):
         """
-        You can render an empty to-one relationship
+        You can render empty relationships
         """
         request = self.factory.get(reverse('album-detail', kwargs={'pk': 3}))
         response = self.view_detail(request, pk=3)
@@ -107,12 +107,18 @@ class JSONAPIRelationshipsRendererTestCase(APISimpleTestCase):
                 'relationships': {
                     'artist': {
                         'data': None
+                    },
+                    'tracks': {
+                        'data': []
                     }
                 }
             }
         })
 
     def test_to_one_non_empty(self):
+        """
+        You can render a non-empty to-one relationship.
+        """
         request = self.factory.get(reverse('album-detail', kwargs={'pk': 0}))
         response = self.view_detail(request, pk=0)
         response.render()
@@ -127,13 +133,186 @@ class JSONAPIRelationshipsRendererTestCase(APISimpleTestCase):
                 'relationships': {
                     'artist': {
                         'data': {'id': '1', 'type': 'artist'}
+                    },
+                    'tracks': {
+                        'data': []
                     }
                 }
             }
         })
 
-    # TODO: to-one included
+    def test_to_many_non_empty(self):
+        """
+        You can render a non-empty to-many relationship.
+        """
+        request = self.factory.get(reverse('album-detail', kwargs={'pk': 1}))
+        response = self.view_detail(request, pk=1)
+        response.render()
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        self.assertJSONEqual(response.content.decode(), {
+            'data': {
+                'id': '1',
+                'type': 'album',
+                'attributes': {
+                    'albumName': 'Birth of the Cool'
+                },
+                'relationships': {
+                    'artist': {
+                        'data': {'id': '0', 'type': 'artist'}
+                    },
+                    'tracks': {
+                        'data': [
+                            {'id': '0', 'type': 'track'},
+                            {'id': '1', 'type': 'track'},
+                            {'id': '2', 'type': 'track'},
+                            {'id': '3', 'type': 'track'},
+                        ]
+                    }
+                }
+            }
+        })
 
-    # TODO: to-many empty
-    # TODO: to-many filled
-    # TODO: included linkages
+    def test_include_to_one(self):
+        """
+        You can include a to-one relationship as a compound document
+        """
+        request = self.factory.get(reverse('album-detail', kwargs={'pk': 0}),
+                                   {'include': 'artist'})
+        response = self.view_detail(request, pk=0)
+        response.render()
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        self.assertJSONEqual(response.content.decode(), {
+            'data': {
+                'id': '0',
+                'type': 'album',
+                'attributes': {
+                    'albumName': 'A Love Supreme'
+                },
+                'relationships': {
+                    'artist': {
+                        'data': {'id': '1', 'type': 'artist'}
+                    },
+                    'tracks': {
+                        'data': []
+                    }
+                }
+            },
+            'included': [
+                {
+                    'id': '1',
+                    'type': 'artist',
+                    'attributes': {
+                        'firstName': 'John',
+                        'lastName': 'Coltrane'
+                    }
+                }
+            ]
+        })
+
+    def test_include_to_many_and_paths(self):
+        """
+        You can include a to-many relationship as a compound document
+        """
+        track_detail = TrackViewSet.as_view({'get': 'retrieve'})
+        request = self.factory.get(reverse('track-detail', kwargs={'pk': 0}),
+                                   {'include': 'album,album.artist,album.tracks'})
+        response = track_detail(request, pk=0)
+        response.render()
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        self.assertJSONEqual(response.content.decode(), {
+            'data': {
+                'id': '0',
+                'type': 'track',
+                'attributes': {
+                    'name': 'Jeru',
+                    'trackNum': 1
+                },
+                'relationships': {
+                    'album': {
+                        'data': {'id': '1', 'type': 'album'}
+                    }
+                }
+            },
+            'included': [
+                {
+                    'id': '1',
+                    'type': 'album',
+                    'attributes': {
+                        'albumName': 'Birth of the Cool'
+                    },
+                    'relationships': {
+                        'artist': {
+                            'data': {'id': '0', 'type': 'artist'}
+                        },
+                        'tracks': {
+                            'data': [
+                                {'id': '0', 'type': 'track'},
+                                {'id': '1', 'type': 'track'},
+                                {'id': '2', 'type': 'track'},
+                                {'id': '3', 'type': 'track'},
+                            ]
+                        }
+                    }
+                },
+                {
+                    'id': '0',
+                    'type': 'artist',
+                    'attributes': {
+                        'firstName': 'Miles',
+                        'lastName': 'Davis'
+                    }
+                },
+                {
+                    'id': '0',
+                    'type': 'track',
+                    'attributes': {
+                        'name': 'Jeru',
+                        'trackNum': 1
+                    },
+                    'relationships': {
+                        'album': {
+                            'data': {'id': '1', 'type': 'album'}
+                        }
+                    }
+                },
+                {
+                    'id': '1',
+                    'type': 'track',
+                    'attributes': {
+                        'name': 'Moon Dreams',
+                        'trackNum': 2
+                    },
+                    'relationships': {
+                        'album': {
+                            'data': {'id': '1', 'type': 'album'}
+                        }
+                    }
+                },
+                {
+                    'id': '2',
+                    'type': 'track',
+                    'attributes': {
+                        'name': 'Venus de Milo',
+                        'trackNum': 3
+                    },
+                    'relationships': {
+                        'album': {
+                            'data': {'id': '1', 'type': 'album'}
+                        }
+                    }
+                },
+                {
+                    'id': '3',
+                    'type': 'track',
+                    'attributes': {
+                        'name': 'Deception',
+                        'trackNum': 4
+                    },
+                    'relationships': {
+                        'album': {
+                            'data': {'id': '1', 'type': 'album'}
+                        }
+                    }
+                }
+            ]
+        })

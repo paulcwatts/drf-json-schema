@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from django.core.urlresolvers import reverse
 
-from .exceptions import TypeConflict
+from .exceptions import TypeConflict, IncludeInvalid
 from .transforms import NullTransform
 
 
@@ -72,7 +72,7 @@ class ResourceObject(BaseLinkedObject):
             })
         return result
 
-    def render(self, data, request):
+    def render(self, data, request, include):
         """
         Renders data to a Resource Object representation.
         """
@@ -84,7 +84,7 @@ class ResourceObject(BaseLinkedObject):
         if attributes:
             result['attributes'] = attributes
 
-        relationships = self.render_relationships(data, request)
+        relationships, included = self.render_relationships(data, request, include)
         if relationships:
             result['relationships'] = relationships
 
@@ -95,22 +95,36 @@ class ResourceObject(BaseLinkedObject):
         meta = self.render_meta(data, request)
         if meta:
             result['meta'] = meta
-        return result
+        return result, included
 
     def render_attributes(self, data, request):
         return OrderedDict(
             (self.transformed_names[attr], self.from_data(data, attr)) for attr in self.attributes
         )
 
-    def render_relationships(self, data, request):
-        return OrderedDict(
-            (self.transformed_names[name],
-             self.render_relationship(data, name, rel, request)) for (name, rel) in self.relationships
-        )
+    def render_relationships(self, data, request, include):
+        relationships = OrderedDict()
+        included = []
+        # Validate that all top-level include keys are actually relationships
+        rel_keys = {rel[0] for rel in self.relationships}
+        for key in include:
+            if key not in rel_keys:
+                raise IncludeInvalid('Invalid relationship to include: %s' % key)
 
-    def render_relationship(self, data, rel_name, rel, request):
+        for (name, rel) in self.relationships:
+            relationship, rel_included = self.render_relationship(data, name, rel, request, include)
+            relationships[self.transformed_names[name]] = relationship
+            included.extend(rel_included)
+
+        return relationships, included
+
+    def render_relationship(self, data, rel_name, rel, request, include):
+        # This relationship is included if rel_name is in the include paths.
+        include_this = rel_name in include
+        include_paths = include.get(rel_name, {})
+
         rel_data = self.from_data(data, rel_name)
-        return rel.render(data, rel_data, request)
+        return rel.render(data, rel_data, request, include_this, include_paths)
 
     def from_data(self, data, attr):
         # This is easy for now, but eventually we want to be able to specify
@@ -118,9 +132,6 @@ class ResourceObject(BaseLinkedObject):
         return data[attr]
 
 
-# TODO: All of this might be too complex for our ultimate goal.
-# Simplify when we implement parsing and included resource
-#
 class ResourceIdObject(BaseLinkedObject):
     """
     http://jsonapi.org/format/#document-resource-identifier-objects
@@ -143,6 +154,20 @@ class ResourceIdObject(BaseLinkedObject):
             result['meta'] = meta
         return result
 
+    def get_schema(self):
+        """
+        Subclasses can override this with a mechanism to get the schema for a resource object.
+        This is optional, but required for including resources.
+        """
+        raise IncludeInvalid()
+
+    def get_data(self):
+        """
+        Subclasses can override this with a mechanism to get the rendered data for resource object.
+        This is optional, but required for including resources.
+        """
+        raise IncludeInvalid()
+
 
 class RelationshipObject(BaseLinkedObject):
     links = ()
@@ -152,16 +177,32 @@ class RelationshipObject(BaseLinkedObject):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def render(self, obj_data, rel_data, request):
+    def render_included(self, rel_data, request, include_paths):
+        # This recursively calls the resource's schema to render the full object.
+        schema = rel_data.get_schema()
+        obj, included = schema.render(rel_data.get_data(), request, include_paths)
+        return [obj] + included
+
+    def render(self, obj_data, rel_data, request, include_this, include_paths):
         result = OrderedDict()
+        included = []
+
         if not rel_data:
             # None or []
             result['data'] = rel_data
         elif isinstance(rel_data, ResourceIdObject):
             result['data'] = rel_data.render(request)
+            if include_this:
+                included.extend(self.render_included(rel_data, request, include_paths))
         else:
             # Probably a list of resource objects
-            result['data'] = [obj.render(request) for obj in rel_data]
+            if include_this:
+                result['data'] = []
+                for obj in rel_data:
+                    result['data'].append(obj.render(request))
+                    included.extend(self.render_included(obj, request, include_paths))
+            else:
+                result['data'] = [obj.render(request) for obj in rel_data]
 
         links = self.render_links(obj_data, request)
         if links:
@@ -170,7 +211,7 @@ class RelationshipObject(BaseLinkedObject):
         meta = self.render_meta(obj_data, request)
         if meta:
             result['meta'] = meta
-        return result
+        return result, included
 
 
 class LinkObject(object):
