@@ -80,7 +80,7 @@ class JSONAPIRenderer(JSONRenderer):
             rendered['errors'] = self.render_exception(data, renderer_context)
         else:
             rendered_data, included = self.render_data(data, renderer_context, to_include)
-            if rendered_data:
+            if rendered_data is not None:
                 rendered['data'] = rendered_data
             if included:
                 rendered['included'] = included

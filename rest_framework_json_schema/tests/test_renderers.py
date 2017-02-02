@@ -63,6 +63,18 @@ class JSONAPIAttributesRendererTestCase(APISimpleTestCase):
             }
         ])
 
+    def test_empty_list(self):
+        """
+        The 'data' field appears in the top-level object even if data is empty.
+        """
+        request = self.factory.get(reverse('artist-list'), {'filter[firstName]': 'Foo'})
+        response = self.view_list(request)
+        response.render()
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        self.assertJSONEqual(response.content.decode(), {
+            'data': []
+        })
+
     def test_exception(self):
         """
         The renderer handles thrown exceptions.

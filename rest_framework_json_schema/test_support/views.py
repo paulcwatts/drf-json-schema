@@ -5,10 +5,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .serializers import ArtistSerializer, AlbumSerializer, TrackSerializer, get_artists, get_albums, get_tracks
+from rest_framework_json_schema.filters import get_query_filters
 from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
 from rest_framework_json_schema.pagination import JSONAPILimitOffsetPagination
 from rest_framework_json_schema.parsers import JSONAPIParser
 from rest_framework_json_schema.renderers import JSONAPIRenderer
+from rest_framework_json_schema.transforms import CamelCaseToUnderscoreTransform
 
 
 class BaseViewSet(viewsets.ModelViewSet):
@@ -23,6 +25,13 @@ class BaseViewSet(viewsets.ModelViewSet):
             return self.get_queryset()[self.kwargs[lookup_url_kwarg]]
         except IndexError:
             raise Http404('Not found.')
+
+    def filter_queryset(self, queryset):
+        filters = get_query_filters(self.request.query_params, CamelCaseToUnderscoreTransform())
+        for key, value in filters.items():
+            queryset = [item for item in queryset if getattr(item, key) == value]
+
+        return queryset
 
 
 class ArtistViewSet(BaseViewSet):
