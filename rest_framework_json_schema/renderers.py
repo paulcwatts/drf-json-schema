@@ -1,4 +1,7 @@
 from collections import OrderedDict
+from django.core.exceptions import ImproperlyConfigured
+import six
+import sys
 
 from rest_framework.renderers import JSONRenderer
 
@@ -48,7 +51,15 @@ class JSONAPIRenderer(JSONRenderer):
         """
         Override this if you have a different way to get the schema.
         """
-        serializer = data.serializer
+        try:
+            serializer = data.serializer
+        except AttributeError:
+            six.reraise(ImproperlyConfigured,
+                        ImproperlyConfigured(
+                            "Serializer not found on data to render. This usually happens when a ViewSet doesn't have a JSONAPI paginator."
+                        ),
+                        sys.exc_info()[2])
+
         if not getattr(serializer, 'many', False):
             return getattr(serializer, 'schema')
         else:

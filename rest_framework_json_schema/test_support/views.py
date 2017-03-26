@@ -1,6 +1,7 @@
 from django.http import Http404
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
@@ -48,6 +49,13 @@ class ArtistViewSet(BaseViewSet):
 
 class PaginateViewSet(ArtistViewSet):
     pagination_class = JSONAPILimitOffsetPagination
+
+
+class NonJSONPaginateViewSet(ArtistViewSet):
+    """
+    Tests when a viewset is paginated but without a JSONAPI Paginator
+    """
+    pagination_class = LimitOffsetPagination
 
 
 class AlbumViewSet(BaseViewSet):
