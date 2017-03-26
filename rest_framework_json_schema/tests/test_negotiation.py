@@ -1,12 +1,30 @@
 from django.core.urlresolvers import reverse
 from django.test import override_settings
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
+from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
 
 from rest_framework_json_schema.test_support.views import ArtistViewSet
 
 
 @override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
 class JSONAPINegotiationTestCase(APISimpleTestCase):
+    maxDiff = None
+
+    def test_accept_list(self):
+        """
+        The negotiator filters application/vnd.api+json with params, but not any non-vnd.api+json
+        """
+        negotiator = JSONAPIContentNegotiation()
+        factory = APIRequestFactory()
+
+        request = factory.get(reverse('artist-list'), HTTP_ACCEPT='application/vnd.api+json')
+        accept_list = negotiator.get_accept_list(request)
+        self.assertEqual(accept_list, ['application/vnd.api+json'])
+
+        request = factory.get(reverse('artist-list'), HTTP_ACCEPT='text/html,application/vnd.api+json;indent=4,application/xml;q=0.9,*/*;q=0.8')
+        accept_list = negotiator.get_accept_list(request)
+        self.assertEqual(accept_list, ['text/html', 'application/xml;q=0.9', '*/*;q=0.8'])
+
     def test_media_params(self):
         """
         Servers MUST respond with a 406 Not Acceptable status code if a request's Accept header
@@ -27,6 +45,3 @@ class JSONAPINegotiationTestCase(APISimpleTestCase):
         self.assertEqual(response.data, {
             'detail': 'Could not satisfy the request Accept header.'
         })
-
-    # TODO: Servers MUST respond with a 415 Unsupported Media Type status code
-    # if a request specifies the header Content-Type: application/vnd.api+json with any media type parameters.
