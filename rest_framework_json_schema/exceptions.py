@@ -10,3 +10,9 @@ class IncludeInvalid(Exception):
     """
     This relationship cannot be included.
     """
+
+
+class NoSchema(Exception):
+    """
+    Schema not found on the data to render.
+    """

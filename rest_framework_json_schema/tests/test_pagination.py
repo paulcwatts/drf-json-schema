@@ -1,7 +1,7 @@
-from django.core.exceptions import ImproperlyConfigured
+import json
+
 from django.core.urlresolvers import reverse
 from django.test import override_settings
-
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
 
 from rest_framework_json_schema.test_support.serializers import reset_data
@@ -65,5 +65,10 @@ class JSONAPINonPageTestCase(APISimpleTestCase):
         list_url = reverse('page-list')
         request = self.factory.get(list_url, {'offset': 2, 'limit': 2})
         response = self.view_list(request)
-        with self.assertRaises(ImproperlyConfigured):
-            response.render()
+        response.render()
+        # This really is misconfigured, it's mostly when someone has forgotten
+        # to add a JSONAPI paginator to the View.
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        data = json.loads(response.content.decode())
+        self.assertIn('meta', data)
+        self.assertIn('data', data['meta'])
