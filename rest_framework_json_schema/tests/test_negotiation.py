@@ -21,7 +21,8 @@ class JSONAPINegotiationTestCase(APISimpleTestCase):
         accept_list = negotiator.get_accept_list(request)
         self.assertEqual(accept_list, ['application/vnd.api+json'])
 
-        request = factory.get(reverse('artist-list'), HTTP_ACCEPT='text/html,application/vnd.api+json;indent=4,application/xml;q=0.9,*/*;q=0.8')
+        accept = 'text/html,application/vnd.api+json;indent=4,application/xml;q=0.9,*/*;q=0.8'
+        request = factory.get(reverse('artist-list'), HTTP_ACCEPT=accept)
         accept_list = negotiator.get_accept_list(request)
         self.assertEqual(accept_list, ['text/html', 'application/xml;q=0.9', '*/*;q=0.8'])
 
@@ -34,12 +35,14 @@ class JSONAPINegotiationTestCase(APISimpleTestCase):
         factory = APIRequestFactory()
         view_list = ArtistViewSet.as_view({'get': 'list'})
 
-        request = factory.get(reverse('artist-list'), HTTP_ACCEPT='application/vnd.api+json')
+        request = factory.get(reverse('artist-list'),
+                              HTTP_ACCEPT='application/vnd.api+json')
         response = view_list(request)
         # Acceptable
         self.assertEqual(response.status_code, 200)
 
-        request = factory.get(reverse('artist-list'), HTTP_ACCEPT='application/vnd.api+json; indent=4')
+        request = factory.get(reverse('artist-list'),
+                              HTTP_ACCEPT='application/vnd.api+json; indent=4')
         response = view_list(request)
         self.assertEqual(response.status_code, 406)
         self.assertEqual(response.data, {

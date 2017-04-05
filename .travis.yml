@@ -9,7 +9,7 @@ env:
   - DJANGO='django>=1.8.0,<1.9.0' DRF='djangorestframework>=3.5'
   - DJANGO='django>=1.9.0,<1.10.0' DRF='djangorestframework>=3.5'
   - DJANGO='django>=1.10.0,<1.11.0' DRF='djangorestframework>=3.5'
-  - DJANGO='django==1.11a1' DRF='djangorestframework>=3.5'
+  - DJANGO='django>=1.11.0,<1.12.0' DRF='djangorestframework>=3.5'
 before_install:
   - pip install -U pytest
   - pip install -r requirements-test.txt
@@ -23,7 +23,6 @@ matrix:
     - python: "3.6"
       env: DJANGO='django>=1.8.0,<1.9.0' DRF='djangorestframework>=3.5'
   allow_failures:
-    - env: DJANGO='django==1.11a1'
     - env: DJANGO='https://github.com/django/django/archive/master.tar.gz'
 after_success:
   - bash <(curl -s https://codecov.io/bash)

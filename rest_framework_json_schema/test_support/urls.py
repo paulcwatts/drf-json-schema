@@ -1,6 +1,7 @@
 from django.conf.urls import url, include
 from rest_framework import routers
-from .views import (ArtistViewSet, AlbumViewSet, TrackViewSet, PaginateViewSet, NonJSONPaginateViewSet)
+from .views import (ArtistViewSet, AlbumViewSet, TrackViewSet,
+                    PaginateViewSet, NonJSONPaginateViewSet)
 
 
 router = routers.DefaultRouter()

@@ -135,8 +135,9 @@ class TrackSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     track_num = serializers.IntegerField()
     name = serializers.CharField()
-    album = JSONAPIRelationshipField(serializer='rest_framework_json_schema.test_support.serializers.AlbumSerializer',
-                                     queryset=get_albums)
+    album = JSONAPIRelationshipField(
+        serializer='rest_framework_json_schema.test_support.serializers.AlbumSerializer',
+        queryset=get_albums)
 
     schema = TrackObject
 

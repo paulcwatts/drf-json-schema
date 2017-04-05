@@ -5,7 +5,8 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .serializers import ArtistSerializer, AlbumSerializer, TrackSerializer, get_artists, get_albums, get_tracks
+from .serializers import (ArtistSerializer, AlbumSerializer, TrackSerializer,
+                          get_artists, get_albums, get_tracks)
 from rest_framework_json_schema.filters import get_query_filters
 from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
 from rest_framework_json_schema.pagination import JSONAPILimitOffsetPagination

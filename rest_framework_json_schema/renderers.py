@@ -56,7 +56,8 @@ class JSONAPIRenderer(JSONRenderer):
         except AttributeError:
             six.reraise(ImproperlyConfigured,
                         ImproperlyConfigured(
-                            "Serializer not found on data to render. This usually happens when a ViewSet doesn't have a JSONAPI paginator."
+                            "Serializer not found on data to render. "
+                            "This usually happens when a ViewSet doesn't have a JSONAPI paginator."
                         ),
                         sys.exc_info()[2])
 

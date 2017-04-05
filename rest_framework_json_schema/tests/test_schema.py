@@ -4,7 +4,8 @@ from django.test import SimpleTestCase, override_settings
 from rest_framework.test import APIRequestFactory
 
 from rest_framework_json_schema.exceptions import TypeConflict, IncludeInvalid
-from rest_framework_json_schema.schema import ResourceObject, RelationshipObject, ResourceIdObject, LinkObject, UrlLink
+from rest_framework_json_schema.schema import (ResourceObject, RelationshipObject,
+                                               ResourceIdObject, LinkObject, UrlLink)
 from rest_framework_json_schema.transforms import CamelCaseTransform
 from rest_framework_json_schema.utils import parse_include
 
@@ -81,8 +82,11 @@ class ResourceObjectTest(SimpleTestCase):
         class TestObject(ResourceObject):
             type = 'artists'
             links = (
-                ('self', UrlLink(view_name='artist-detail', url_kwargs={'pk': 'id'})),
-                ('relative', UrlLink(view_name='artist-detail', url_kwargs={'pk': 'id'}, absolute=False)),
+                ('self', UrlLink(view_name='artist-detail',
+                                 url_kwargs={'pk': 'id'})),
+                ('relative', UrlLink(view_name='artist-detail',
+                                     url_kwargs={'pk': 'id'},
+                                     absolute=False)),
                 ('object', ObjectLink())
             )
 
@@ -186,7 +190,8 @@ class ResourceObjectTest(SimpleTestCase):
     def test_render_complex_relationship(self):
         """
         Allow specifying a relationship object that specifies additional data for the relationship.
-        Relationship links will most likely depend on some part of original object's data (like the pk)
+        Relationship links will most likely depend on some part of original object's data
+        (like the pk)
         """
         class ArtistRelationship(RelationshipObject):
             links = (
