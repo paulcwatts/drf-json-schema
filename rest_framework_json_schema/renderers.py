@@ -1,10 +1,8 @@
 from collections import OrderedDict
-from django.core.exceptions import ImproperlyConfigured
-import six
-import sys
 
 from rest_framework.renderers import JSONRenderer
 
+from .exceptions import NoSchema
 from .utils import parse_include
 
 
@@ -54,11 +52,7 @@ class JSONAPIRenderer(JSONRenderer):
         try:
             serializer = data.serializer
         except AttributeError:
-            six.reraise(ImproperlyConfigured,
-                        ImproperlyConfigured(
-                            "Serializer not found on data to render. This usually happens when a ViewSet doesn't have a JSONAPI paginator."
-                        ),
-                        sys.exc_info()[2])
+            raise NoSchema()
 
         if not getattr(serializer, 'many', False):
             return getattr(serializer, 'schema')
@@ -90,11 +84,16 @@ class JSONAPIRenderer(JSONRenderer):
         if self.is_exception(data, renderer_context):
             rendered['errors'] = self.render_exception(data, renderer_context)
         else:
-            rendered_data, included = self.render_data(data, renderer_context, to_include)
-            if rendered_data is not None:
-                rendered['data'] = rendered_data
-            if included:
-                rendered['included'] = included
+            try:
+                rendered_data, included = self.render_data(data, renderer_context, to_include)
+                if rendered_data is not None:
+                    rendered['data'] = rendered_data
+                if included:
+                    rendered['included'] = included
+            except NoSchema:
+                # Because we don't know the type of this data, we can't include it as
+                # primary data.
+                meta['data'] = data
 
         data_meta = getattr(data, 'meta', None)
         if data_meta:

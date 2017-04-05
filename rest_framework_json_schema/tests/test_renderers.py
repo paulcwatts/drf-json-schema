@@ -90,6 +90,22 @@ class JSONAPIAttributesRendererTestCase(APISimpleTestCase):
             ]
         })
 
+    def test_options(self):
+        request = self.factory.options(reverse('artist-list'))
+        response = self.view_list(request)
+        response.render()
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        self.assertJSONEqual(response.content.decode(), {
+            'meta': {
+                'data': {
+                    'description': 'A simple ViewSet for listing or retrieving artists.',
+                    'name': 'Artist',
+                    'parses': ['application/vnd.api+json'],
+                    'renders': ['application/vnd.api+json']
+                }
+            }
+        })
+
 
 @override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
 class JSONAPIRelationshipsRendererTestCase(APISimpleTestCase):
