@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
-from .compat import reverse
+from django.urls import reverse
+
 from .exceptions import TypeConflict, IncludeInvalid
 from .transforms import NullTransform
 
