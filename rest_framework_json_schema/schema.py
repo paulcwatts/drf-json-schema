@@ -19,7 +19,8 @@ class Context(object):
 class BaseLinkedObject(object):
     def render_links(self, data, context):
         return OrderedDict(
-            (link_name, link_obj.render(data, context.request)) for (link_name, link_obj) in self.links
+            (link_name, link_obj.render(data, context.request))
+            for (link_name, link_obj) in self.links
         )
 
     def render_meta(self, data, context):

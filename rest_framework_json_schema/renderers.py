@@ -9,7 +9,7 @@ from .exceptions import NoSchema
 from .utils import parse_include
 
 
-RX_FIELDS = re.compile(r'fields\[([a-zA-Z0-9\-_]+)\]')
+RX_FIELDS = re.compile(r'^fields\[([a-zA-Z0-9\-_]+)\]$')
 
 
 class JSONAPIRenderer(JSONRenderer):
@@ -79,7 +79,7 @@ class JSONAPIRenderer(JSONRenderer):
         fields = {}
         if request:
             for key, value in six.iteritems(request.query_params):
-                m = RX_FIELDS.fullmatch(key)
+                m = RX_FIELDS.match(key)
                 if m:
                     fields[m.group(1)] = value.split(',')
         return fields
