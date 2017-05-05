@@ -4,7 +4,8 @@ from django.test import SimpleTestCase, override_settings
 from rest_framework.test import APIRequestFactory
 
 from rest_framework_json_schema.exceptions import TypeConflict, IncludeInvalid
-from rest_framework_json_schema.schema import (ResourceObject, RelationshipObject,
+from rest_framework_json_schema.schema import (Context,
+                                               ResourceObject, RelationshipObject,
                                                ResourceIdObject, LinkObject, UrlLink)
 from rest_framework_json_schema.transforms import CamelCaseTransform
 from rest_framework_json_schema.utils import parse_include
@@ -23,7 +24,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = ResourceObject().render({
             'id': '123',
             'attribute': 'ignored'
-        }, self.request, {}, {})
+        }, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'unknown')
@@ -38,7 +39,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = obj.render({
             'user_id': '123',
             'name': 'John'
-        }, self.request, {}, {})
+        }, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
@@ -58,7 +59,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = TestObject().render({
             'user_id': '123',
             'name': 'John'
-        }, self.request, {}, {})
+        }, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
@@ -90,7 +91,7 @@ class ResourceObjectTest(SimpleTestCase):
                 ('object', ObjectLink())
             )
 
-        primary, included = TestObject().render({'id': '123'}, self.request, {}, {})
+        primary, included = TestObject().render({'id': '123'}, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'artists'),
@@ -109,7 +110,7 @@ class ResourceObjectTest(SimpleTestCase):
         An optional meta object is rendered
         """
         obj = ResourceObject(type='users', meta={'foo': 'bar'})
-        primary, included = obj.render({'id': '123'}, self.request, {}, {})
+        primary, included = obj.render({'id': '123'}, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
@@ -131,7 +132,7 @@ class ResourceObjectTest(SimpleTestCase):
         # To-Many: an array of ResourceIdObjects
         obj = AlbumObject()
 
-        primary, included = obj.render({'id': '123', 'artist': None}, self.request, {}, {})
+        primary, included = obj.render({'id': '123', 'artist': None}, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -141,7 +142,7 @@ class ResourceObjectTest(SimpleTestCase):
         )))
         self.assertEqual(included, [])
 
-        primary, included = obj.render({'id': '123', 'artist': []}, self.request, {}, {})
+        primary, included = obj.render({'id': '123', 'artist': []}, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -154,7 +155,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = obj.render({
             'id': '123',
             'artist': ResourceIdObject(id=5, type='artist')
-        }, self.request, {}, {})
+        }, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -172,7 +173,7 @@ class ResourceObjectTest(SimpleTestCase):
                 ResourceIdObject(id=5, type='artist'),
                 ResourceIdObject(id=6, type='artist')
             ]
-        }, self.request, {}, {})
+        }, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -209,7 +210,7 @@ class ResourceObjectTest(SimpleTestCase):
 
         obj = AlbumObject()
 
-        primary, included = obj.render({'id': '123', 'album_artist': None}, self.request, {}, {})
+        primary, included = obj.render({'id': '123', 'album_artist': None}, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -254,7 +255,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = AlbumObject().render({
             'id': '123',
             'artist': ArtistLink(id=5, type='artist')
-        }, self.request, parse_include('artist'), {})
+        }, Context(self.request, parse_include('artist')))
         self.assertEqual(included, [
             OrderedDict((
                 ('id', '5'),
@@ -316,7 +317,7 @@ class ResourceObjectTest(SimpleTestCase):
             'first_name': 'John',
             'last_name': 'Coltrane',
             'albums': [AlbumLink(id=5, name='A Love Supreme')]
-        }, self.request, parse_include('albums.tracks'), {})
+        }, Context(self.request, parse_include('albums.tracks')))
         self.assertEqual(included, [
             OrderedDict((
                 ('id', '5'),
@@ -364,7 +365,7 @@ class ResourceObjectTest(SimpleTestCase):
                 'first_name': 'John',
                 'last_name': 'Coltrane',
                 'albums': []
-            }, self.request, parse_include('invalid'), {})
+            }, Context(self.request, parse_include('invalid')))
 
     def test_render_sparse_fields(self):
         """
@@ -399,7 +400,8 @@ class ResourceObjectTest(SimpleTestCase):
             'artist': ArtistLink(id=5, type='artist')
         }
 
-        primary, included = AlbumObject().render(obj, self.request, {}, {'album': ['name']})
+        context = Context(self.request, fields={'album': ['name']})
+        primary, included = AlbumObject().render(obj, context)
 
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
@@ -411,7 +413,8 @@ class ResourceObjectTest(SimpleTestCase):
         self.assertEqual(included, [])
 
         # Sparse relationship
-        primary, included = AlbumObject().render(obj, self.request, {}, {'album': ['artist']})
+        context = Context(self.request, fields={'album': ['artist']})
+        primary, included = AlbumObject().render(obj, context)
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -423,9 +426,12 @@ class ResourceObjectTest(SimpleTestCase):
         )))
 
         # Include a relationship with sparse fields specified for that relationship
-        primary, included = AlbumObject().render(obj, self.request,
-                                                 parse_include('artist'),
-                                                 {'artist': ['first_name']})
+        context = Context(
+            self.request,
+            parse_include('artist'),
+            {'artist': ['first_name']}
+        )
+        primary, included = AlbumObject().render(obj, context)
         self.assertEqual(included, [
             OrderedDict((
                 ('id', '5'),
@@ -471,7 +477,8 @@ class ResourceObjectTest(SimpleTestCase):
             'genre': 'Jazz',
             'artist': ArtistLink(id=5, type='artist')
         }
-        primary, included = AlbumObject().render(obj, self.request, {}, {'album': ['albumName']})
+        context = Context(self.request, fields={'album': ['albumName']})
+        primary, included = AlbumObject().render(obj, context)
 
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
@@ -491,7 +498,7 @@ class ResourceObjectTest(SimpleTestCase):
             'id': '123',
             'first_name': 'John',
             'last_name': 'Coltrane'
-        }, self.request, {}, {})
+        }, Context(self.request))
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
@@ -515,7 +522,7 @@ class ResourceObjectTest(SimpleTestCase):
                 'firstName': 'John',
                 'lastName': 'Coltrane'
             }
-        }, self.request)
+        }, Context(self.request))
         self.assertEqual(result, {
             'id': '123',
             'first_name': 'John',
@@ -533,7 +540,7 @@ class ResourceObjectTest(SimpleTestCase):
             'attributes': {
                 'firstName': 'John'
             }
-        }, self.request)
+        }, Context(self.request))
         self.assertEqual(result, {
             'first_name': 'John'
         })
@@ -547,6 +554,6 @@ class ResourceObjectTest(SimpleTestCase):
             obj.parse({
                 'id': '123',
                 'type': 'something'
-            }, self.request)
+            }, Context(self.request))
         with self.assertRaises(TypeConflict):
             obj.parse({}, self.request)

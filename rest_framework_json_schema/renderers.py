@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 from rest_framework.renderers import JSONRenderer
 
+from .schema import Context
 from .exceptions import NoSchema
 from .utils import parse_include
 
@@ -14,7 +15,8 @@ class JSONAPIRenderer(JSONRenderer):
     jsonapi = None
 
     def render_obj(self, obj, schema, renderer_context, include):
-        return schema.render(obj, renderer_context.get('request', None), include, {})
+        context = Context(renderer_context.get('request', None), include, {})
+        return schema.render(obj, context)
 
     def render_list(self, obj_list, schema, renderer_context, include):
         primary = []
