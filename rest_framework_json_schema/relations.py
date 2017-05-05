@@ -31,6 +31,21 @@ class JSONAPIRelationshipField(serializers.PrimaryKeyRelatedField):
         )
         super(JSONAPIRelationshipField, self).__init__(**kwargs)
 
+    def use_pk_only_optimization(self):
+        # We can use the pk-only optimization if the parent's object
+        # is not included in the 'include' query parameter in some form.
+        request = self.context.get('request', None)
+        if not request:
+            # To be on the safe side -- this usually happens when we
+            # are in a multi-level include scenario.
+            return False
+
+        include = request.query_params.get('include')
+        # Because we can't tell what "level" of inclusion we're at,
+        # the only safe thing we can do is to turn off the optimization
+        # if the include parameter exists.
+        return not include
+
     def get_serializer(self):
         if not self._serializer:
             # If the serializer value is a string, try to import it.
