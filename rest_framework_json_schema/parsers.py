@@ -4,6 +4,7 @@ from rest_framework.parsers import JSONParser
 
 from .exceptions import TypeConflict
 from .renderers import JSONAPIRenderer
+from .schema import Context
 
 
 class Conflict(exceptions.APIException):
@@ -31,7 +32,7 @@ class JSONAPIParser(JSONParser):
             raise exceptions.ValidationError('No primary data.')
 
         try:
-            parsed = schema().parse(data, parser_context.get('request', None))
+            parsed = schema().parse(data, Context(parser_context.get('request', None)))
         except TypeConflict as e:
             raise Conflict(str(e))
 
