@@ -40,11 +40,6 @@ class JSONAPIRelationshipField(serializers.PrimaryKeyRelatedField):
             # are in a multi-level include scenario.
             return False
 
-        serializer = self.get_serializer()
-        if not serializer:
-            # If there's no serializer, there's no way to include this anyway
-            return True
-
         include = request.query_params.get('include')
         # Because we can't tell what "level" of inclusion we're at,
         # the only safe thing we can do is to turn off the optimization
