@@ -12,6 +12,16 @@ class BaseModel(object):
     def pk(self):
         return self.id
 
+    # This is used to fake a Django model for the purposes
+    # of RelatedField.use_pk_only_optimization. It just
+    # needs to return the ID value for foreign keys.
+    def serializable_value(self, field_name):
+        try:
+            value = getattr(self, field_name)
+            return value.id
+        except AttributeError:
+            return getattr(self, field_name)
+
 
 class Artist(BaseModel):
     def __init__(self, id, first_name, last_name):
