@@ -1,10 +1,15 @@
 from collections import OrderedDict
+import re
+import six
 
 from rest_framework.renderers import JSONRenderer
 
 from .schema import Context
 from .exceptions import NoSchema
 from .utils import parse_include
+
+
+RX_FIELDS = re.compile(r'fields\[([a-zA-Z0-9\-_]+)\]')
 
 
 class JSONAPIRenderer(JSONRenderer):
@@ -14,15 +19,14 @@ class JSONAPIRenderer(JSONRenderer):
     meta = None
     jsonapi = None
 
-    def render_obj(self, obj, schema, renderer_context, include):
-        context = Context(renderer_context.get('request', None), include, {})
+    def render_obj(self, obj, schema, renderer_context, context):
         return schema.render(obj, context)
 
-    def render_list(self, obj_list, schema, renderer_context, include):
+    def render_list(self, obj_list, schema, renderer_context, context):
         primary = []
         included = []
         for obj in obj_list:
-            obj, inc = self.render_obj(obj, schema, renderer_context, include)
+            obj, inc = self.render_obj(obj, schema, renderer_context, context)
             primary.append(obj)
             included.extend(inc)
 
@@ -31,12 +35,14 @@ class JSONAPIRenderer(JSONRenderer):
     def render_data(self, data, renderer_context, include):
         schema = self.get_schema(data, renderer_context)
         assert schema, 'Unable to get schema class'
+        fields = self.get_fields(renderer_context)
+        context = Context(renderer_context.get('request', None), include, fields)
 
         if isinstance(data, dict):
-            return self.render_obj(data, schema(), renderer_context, include)
+            return self.render_obj(data, schema(), renderer_context, context)
 
         elif isinstance(data, list):
-            return self.render_list(data, schema(), renderer_context, include)
+            return self.render_list(data, schema(), renderer_context, context)
 
     def render_exception(self, data, renderer_context):
         return [data]
@@ -67,6 +73,16 @@ class JSONAPIRenderer(JSONRenderer):
             return parse_include(request.query_params.get('include', ''))
         else:
             return {}
+
+    def get_fields(self, renderer_context):
+        request = renderer_context.get('request', None)
+        fields = {}
+        if request:
+            for key, value in six.iteritems(request.query_params):
+                m = RX_FIELDS.fullmatch(key)
+                if m:
+                    fields[m.group(1)] = value.split(',')
+        return fields
 
     def render(self, data, media_type=None, renderer_context=None):
         if data is None:

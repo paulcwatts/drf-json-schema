@@ -106,6 +106,22 @@ class JSONAPIAttributesRendererTestCase(APISimpleTestCase):
             }
         })
 
+    def test_fields(self):
+        url = reverse('artist-detail', kwargs={'pk': 1})
+        request = self.factory.get(url, {'fields[artist]': 'firstName'})
+        response = self.view_detail(request, pk=1)
+        response.render()
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        self.assertJSONEqual(response.content.decode(), {
+            'data': {
+                'id': '1',
+                'type': 'artist',
+                'attributes': {
+                    'firstName': 'John',
+                }
+            }
+        })
+
 
 @override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
 class JSONAPIRelationshipsRendererTestCase(APISimpleTestCase):
@@ -340,6 +356,35 @@ class JSONAPIRelationshipsRendererTestCase(APISimpleTestCase):
                         'album': {
                             'data': {'id': '1', 'type': 'album'}
                         }
+                    }
+                }
+            ]
+        })
+
+    def test_fields(self):
+        request = self.factory.get(reverse('album-detail', kwargs={'pk': 0}),
+                                   {'fields[album]': 'artist',
+                                    'fields[artist]': 'firstName',
+                                    'include': 'artist'})
+        response = self.view_detail(request, pk=0)
+        response.render()
+        self.assertEqual(response['Content-Type'], 'application/vnd.api+json')
+        self.assertJSONEqual(response.content.decode(), {
+            'data': {
+                'id': '0',
+                'type': 'album',
+                'relationships': {
+                    'artist': {
+                        'data': {'id': '1', 'type': 'artist'}
+                    }
+                }
+            },
+            'included': [
+                {
+                    'id': '1',
+                    'type': 'artist',
+                    'attributes': {
+                        'firstName': 'John'
                     }
                 }
             ]
