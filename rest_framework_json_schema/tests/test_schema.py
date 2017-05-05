@@ -23,7 +23,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = ResourceObject().render({
             'id': '123',
             'attribute': 'ignored'
-        }, self.request, {})
+        }, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'unknown')
@@ -38,7 +38,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = obj.render({
             'user_id': '123',
             'name': 'John'
-        }, self.request, {})
+        }, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
@@ -58,7 +58,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = TestObject().render({
             'user_id': '123',
             'name': 'John'
-        }, self.request, {})
+        }, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
@@ -90,7 +90,7 @@ class ResourceObjectTest(SimpleTestCase):
                 ('object', ObjectLink())
             )
 
-        primary, included = TestObject().render({'id': '123'}, self.request, {})
+        primary, included = TestObject().render({'id': '123'}, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'artists'),
@@ -109,7 +109,7 @@ class ResourceObjectTest(SimpleTestCase):
         An optional meta object is rendered
         """
         obj = ResourceObject(type='users', meta={'foo': 'bar'})
-        primary, included = obj.render({'id': '123'}, self.request, {})
+        primary, included = obj.render({'id': '123'}, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),
@@ -131,7 +131,7 @@ class ResourceObjectTest(SimpleTestCase):
         # To-Many: an array of ResourceIdObjects
         obj = AlbumObject()
 
-        primary, included = obj.render({'id': '123', 'artist': None}, self.request, {})
+        primary, included = obj.render({'id': '123', 'artist': None}, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -141,7 +141,7 @@ class ResourceObjectTest(SimpleTestCase):
         )))
         self.assertEqual(included, [])
 
-        primary, included = obj.render({'id': '123', 'artist': []}, self.request, {})
+        primary, included = obj.render({'id': '123', 'artist': []}, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -154,7 +154,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = obj.render({
             'id': '123',
             'artist': ResourceIdObject(id=5, type='artist')
-        }, self.request, {})
+        }, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -172,7 +172,7 @@ class ResourceObjectTest(SimpleTestCase):
                 ResourceIdObject(id=5, type='artist'),
                 ResourceIdObject(id=6, type='artist')
             ]
-        }, self.request, {})
+        }, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -209,7 +209,7 @@ class ResourceObjectTest(SimpleTestCase):
 
         obj = AlbumObject()
 
-        primary, included = obj.render({'id': '123', 'album_artist': None}, self.request, {})
+        primary, included = obj.render({'id': '123', 'album_artist': None}, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'album'),
@@ -254,7 +254,7 @@ class ResourceObjectTest(SimpleTestCase):
         primary, included = AlbumObject().render({
             'id': '123',
             'artist': ArtistLink(id=5, type='artist')
-        }, self.request, parse_include('artist'))
+        }, self.request, parse_include('artist'), {})
         self.assertEqual(included, [
             OrderedDict((
                 ('id', '5'),
@@ -316,7 +316,7 @@ class ResourceObjectTest(SimpleTestCase):
             'first_name': 'John',
             'last_name': 'Coltrane',
             'albums': [AlbumLink(id=5, name='A Love Supreme')]
-        }, self.request, parse_include('albums.tracks'))
+        }, self.request, parse_include('albums.tracks'), {})
         self.assertEqual(included, [
             OrderedDict((
                 ('id', '5'),
@@ -364,7 +364,122 @@ class ResourceObjectTest(SimpleTestCase):
                 'first_name': 'John',
                 'last_name': 'Coltrane',
                 'albums': []
-            }, self.request, parse_include('invalid'))
+            }, self.request, parse_include('invalid'), {})
+
+    def test_render_sparse_fields(self):
+        """
+        Specifying sparse fields limits the rendered attributes/relationships.
+        """
+        class ArtistObject(ResourceObject):
+            type = 'artist'
+            attributes = ('first_name', 'last_name')
+
+        class AlbumObject(ResourceObject):
+            type = 'album'
+            attributes = ('name', 'genre')
+            relationships = ('artist',)
+
+        # This a faked ResourceIdObject that allows the schema to not know about
+        # the serializer directly.
+        class ArtistLink(ResourceIdObject):
+            def get_schema(self):
+                return ArtistObject()
+
+            def get_data(self):
+                return {
+                    'id': self.id,
+                    'first_name': 'John',
+                    'last_name': 'Coltrane'
+                }
+
+        obj = {
+            'id': '123',
+            'name': 'A Love Supreme',
+            'genre': 'Jazz',
+            'artist': ArtistLink(id=5, type='artist')
+        }
+
+        primary, included = AlbumObject().render(obj, self.request, {}, {'album': ['name']})
+
+        self.assertEqual(primary, OrderedDict((
+            ('id', '123'),
+            ('type', 'album'),
+            ('attributes', OrderedDict((
+                ('name', 'A Love Supreme'),
+            )))
+        )))
+        self.assertEqual(included, [])
+
+        # Sparse relationship
+        primary, included = AlbumObject().render(obj, self.request, {}, {'album': ['artist']})
+        self.assertEqual(primary, OrderedDict((
+            ('id', '123'),
+            ('type', 'album'),
+            ('relationships', OrderedDict((
+                ('artist', OrderedDict((
+                    ('data', OrderedDict((('id', '5'), ('type', 'artist')))),
+                ))),
+            )))
+        )))
+
+        # Include a relationship with sparse fields specified for that relationship
+        primary, included = AlbumObject().render(obj, self.request,
+                                                 parse_include('artist'),
+                                                 {'artist': ['first_name']})
+        self.assertEqual(included, [
+            OrderedDict((
+                ('id', '5'),
+                ('type', 'artist'),
+                ('attributes', OrderedDict((
+                    ('first_name', 'John'),
+                )))
+            ))
+        ])
+
+    def test_sparse_transformed_fields(self):
+        """
+        Test that the transformed sparse field names are used.
+        """
+        class ArtistObject(ResourceObject):
+            type = 'artist'
+            attributes = ('first_name', 'last_name')
+            transformer = CamelCaseTransform
+
+        class AlbumObject(ResourceObject):
+            type = 'album'
+            attributes = ('album_name', 'genre')
+            relationships = ('artist',)
+            transformer = CamelCaseTransform
+
+        # This a faked ResourceIdObject that allows the schema to not know about
+        # the serializer directly.
+        class ArtistLink(ResourceIdObject):
+            def get_schema(self):
+                return ArtistObject()
+
+            def get_data(self):
+                return {
+                    'id': self.id,
+                    'first_name': 'John',
+                    'last_name': 'Coltrane',
+                    'instrument': 'Saxophone'
+                }
+
+        obj = {
+            'id': '123',
+            'album_name': 'A Love Supreme',
+            'genre': 'Jazz',
+            'artist': ArtistLink(id=5, type='artist')
+        }
+        primary, included = AlbumObject().render(obj, self.request, {}, {'album': ['albumName']})
+
+        self.assertEqual(primary, OrderedDict((
+            ('id', '123'),
+            ('type', 'album'),
+            ('attributes', OrderedDict((
+                ('albumName', 'A Love Supreme'),
+            )))
+        )))
 
     def test_transform(self):
         """
@@ -376,7 +491,7 @@ class ResourceObjectTest(SimpleTestCase):
             'id': '123',
             'first_name': 'John',
             'last_name': 'Coltrane'
-        }, self.request, {})
+        }, self.request, {}, {})
         self.assertEqual(primary, OrderedDict((
             ('id', '123'),
             ('type', 'users'),

@@ -14,7 +14,7 @@ class JSONAPIRenderer(JSONRenderer):
     jsonapi = None
 
     def render_obj(self, obj, schema, renderer_context, include):
-        return schema.render(obj, renderer_context.get('request', None), include)
+        return schema.render(obj, renderer_context.get('request', None), include, {})
 
     def render_list(self, obj_list, schema, renderer_context, include):
         primary = []
