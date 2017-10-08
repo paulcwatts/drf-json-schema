@@ -35,7 +35,7 @@ class Artist(BaseModel):
 
 
 class Album(BaseModel):
-    def __init__(self, id, album_name, artist):
+    def __init__(self, id, album_name, artist, tracks=None):
         self.id = id
         self.album_name = album_name
         self.artist = artist
@@ -80,16 +80,36 @@ INITIAL_TRACKS = [
 TRACKS = None
 
 
+class QuerySet(object):
+    def __init__(self, objs):
+        self.objs = objs
+
+    def __iter__(self):
+        return iter(self.objs)
+
+    def get(self, pk):
+        return self.objs[pk]
+
+    def add(self, obj):
+        self.objs.append(obj)
+
+    def count(self):
+        return len(self.objs)
+
+    def __getitem__(self, item):
+        return self.objs[item]
+
+
 def get_artists():
-    return ARTISTS
+    return QuerySet(ARTISTS)
 
 
 def get_albums():
-    return ALBUMS
+    return QuerySet(ALBUMS)
 
 
 def get_tracks():
-    return TRACKS
+    return QuerySet(TRACKS)
 
 
 def reset_data():
@@ -132,8 +152,8 @@ class ArtistSerializer(serializers.Serializer):
     schema = ArtistObject
 
     def create(self, validated_data):
-        validated_data['id'] = len(get_artists())
-        get_artists().append(Artist(**validated_data))
+        validated_data['id'] = get_artists().count()
+        get_artists().add(Artist(**validated_data))
         return validated_data
 
     def update(self, instance, validated_data):
@@ -147,7 +167,7 @@ class TrackSerializer(serializers.Serializer):
     name = serializers.CharField()
     album = JSONAPIRelationshipField(
         serializer='rest_framework_json_schema.test_support.serializers.AlbumSerializer',
-        queryset=get_albums)
+        queryset=get_albums())
 
     schema = TrackObject
 
@@ -155,7 +175,13 @@ class TrackSerializer(serializers.Serializer):
 class AlbumSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     album_name = serializers.CharField()
-    artist = JSONAPIRelationshipField(serializer=ArtistSerializer, queryset=get_artists)
-    tracks = JSONAPIRelationshipField(serializer=TrackSerializer, many=True, queryset=get_tracks)
+    artist = JSONAPIRelationshipField(serializer=ArtistSerializer, queryset=get_artists())
+    tracks = JSONAPIRelationshipField(serializer=TrackSerializer, many=True,
+                                      queryset=get_tracks())
 
     schema = AlbumObject
+
+    def create(self, validated_data):
+        validated_data['id'] = get_albums().count()
+        get_albums().add(Album(**validated_data))
+        return validated_data
