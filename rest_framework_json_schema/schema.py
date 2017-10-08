@@ -82,6 +82,13 @@ class ResourceObject(BaseLinkedObject):
                 attr: attributes[self.transformed_names[attr]]
                 for attr in self.attributes if self.transformed_names[attr] in attributes
             })
+        relationships = data.get('relationships')
+        if relationships:
+            result.update({
+                name: rel.parse(relationships[self.transformed_names[name]], context)
+                for (name, rel) in self.relationships
+                if self.transformed_names[name] in relationships
+            })
         return result
 
     def render(self, data, context):
@@ -241,6 +248,15 @@ class RelationshipObject(BaseLinkedObject):
         if meta:
             result['meta'] = meta
         return result, included
+
+    def parse(self, obj_data, context):
+        # Unless the Schema provides it, there's no way to verify the type
+        # of the relationship. So we just look for the ID and propagate it.
+        data = obj_data.get('data')
+        if isinstance(data, list):
+            return [obj['id'] for obj in data]
+        elif isinstance(data, dict):
+            return data['id']
 
 
 class LinkObject(object):
