@@ -1,5 +1,5 @@
-from django.core.urlresolvers import reverse
 from django.test import override_settings
+from django.urls import reverse
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
 from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
 

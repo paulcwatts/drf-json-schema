@@ -6,12 +6,10 @@ python:
   - "3.5"
   - "3.6"
 env:
-  - DJANGO='django>=1.10.0,<1.11.0' DRF='djangorestframework>=3.5,<3.6'
   - DJANGO='django>=1.11.0,<1.12.0' DRF='djangorestframework>=3.5,<3.6'
-  - DJANGO='django>=1.10.0,<1.11.0' DRF='djangorestframework>=3.6,<3.7'
   - DJANGO='django>=1.11.0,<1.12.0' DRF='djangorestframework>=3.6,<3.7'
-  - DJANGO='django>=1.10.0,<1.11.0' DRF='djangorestframework>=3.7,<3.8'
   - DJANGO='django>=1.11.0,<1.12.0' DRF='djangorestframework>=3.7,<3.8'
+  - DJANGO='django>=2.0.0,<2.1.0' DRF='djangorestframework>=3.7,<3.8'
 before_install:
   - pip install -U pytest
   - pip install -r requirements-test.txt
@@ -21,6 +19,9 @@ install:
 script:
   - py.test --flake8 --cov=./
 matrix:
+  exclude:
+    - python: "2.7"
+      env: DJANGO='django>=2.0.0,<2.1.0' DRF='djangorestframework>=3.7,<3.8'
   allow_failures:
     - env: DJANGO='https://github.com/django/django/archive/master.tar.gz'
 after_success:
