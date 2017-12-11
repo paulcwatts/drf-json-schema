@@ -227,6 +227,46 @@ class ResourceObjectTest(SimpleTestCase):
         )))
         self.assertEqual(included, [])
 
+    def test_tolerate_missing_attributes(self):
+        """
+        To support write_only data, be tolerant if an attribute isn't in the data.
+        """
+        obj = ResourceObject(id='user_id', type='users', attributes=('first_name', 'last_name'))
+        primary, included = obj.render({
+            'user_id': '123',
+            'first_name': 'John'
+        }, Context(self.request))
+        self.assertEqual(primary, OrderedDict((
+            ('id', '123'),
+            ('type', 'users'),
+            ('attributes', OrderedDict((('first_name', 'John'),)))
+        )))
+        self.assertEqual(included, [])
+
+    def test_tolerate_missing_relationships(self):
+        """
+        To support write_only data, be tolerant if a relationship isn't in the data.
+        """
+        class AlbumObject(ResourceObject):
+            type = 'album'
+            relationships = ('artist', 'artist2')
+
+        # Empty to-one relationship: relationship is 'None'
+        # Empty to-many relationship: relationship is '[]'
+        # Single relationship: a ResourceIdObject
+        # To-Many: an array of ResourceIdObjects
+        obj = AlbumObject()
+
+        primary, included = obj.render({'id': '123', 'artist2': None}, Context(self.request))
+        self.assertEqual(primary, OrderedDict((
+            ('id', '123'),
+            ('type', 'album'),
+            ('relationships', OrderedDict((
+                ('artist2', OrderedDict((('data', None),))),
+            )))
+        )))
+        self.assertEqual(included, [])
+
     def test_render_included(self):
         """
         You can render included resources
