@@ -119,7 +119,8 @@ class ResourceObject(BaseLinkedObject):
     def render_attributes(self, data, context):
         attributes = self.filter_by_fields(self.attributes, context.fields)
         return OrderedDict(
-            (self.transformed_names[attr], self.from_data(data, attr)) for attr in attributes
+            (self.transformed_names[attr], self.from_data(data, attr))
+            for attr in attributes if attr in data
         )
 
     def render_relationships(self, data, context):
@@ -132,6 +133,8 @@ class ResourceObject(BaseLinkedObject):
                 raise IncludeInvalid('Invalid relationship to include: %s' % key)
 
         filtered = self.filter_by_fields(self.relationships, context.fields, lambda x: x[0])
+        # Filter by missing values in the data
+        filtered = (rel for rel in filtered if rel[0] in data)
         for (name, rel) in filtered:
             relationship, rel_included = self.render_relationship(data, name, rel, context)
             relationships[self.transformed_names[name]] = relationship
@@ -165,7 +168,7 @@ class ResourceObject(BaseLinkedObject):
         type_fields = fields[self.type]
         # This is essentially an intersection, but we preserve the order
         # of the attributes/relationships specified by the schema.
-        return [name for name in names if self.transformed_names[name_fn(name)] in type_fields]
+        return (name for name in names if self.transformed_names[name_fn(name)] in type_fields)
 
 
 class ResourceIdObject(BaseLinkedObject):
