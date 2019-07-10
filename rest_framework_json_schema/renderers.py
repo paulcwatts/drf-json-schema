@@ -1,6 +1,5 @@
 from collections import OrderedDict
 import re
-import six
 
 from rest_framework.renderers import JSONRenderer
 
@@ -63,9 +62,9 @@ class JSONAPIRenderer(JSONRenderer):
             raise NoSchema()
 
         if not getattr(serializer, 'many', False):
-            return getattr(serializer, 'schema')
+            return serializer.schema
         else:
-            return getattr(serializer.child, 'schema')
+            return serializer.child.schema
 
     def get_include(self, renderer_context):
         request = renderer_context.get('request', None)
@@ -78,7 +77,7 @@ class JSONAPIRenderer(JSONRenderer):
         request = renderer_context.get('request', None)
         fields = {}
         if request:
-            for key, value in six.iteritems(request.query_params):
+            for key, value in request.query_params.items():
                 m = RX_FIELDS.match(key)
                 if m:
                     fields[m.group(1)] = value.split(',')

@@ -1,28 +1,19 @@
 language: python
 sudo: false
 python:
-  - "2.7"
-  - "3.4"
-  - "3.5"
   - "3.6"
+  - "3.7"
 env:
-  - DJANGO='django>=1.11.0,<1.12.0' DRF='djangorestframework>=3.5,<3.6'
-  - DJANGO='django>=1.11.0,<1.12.0' DRF='djangorestframework>=3.6,<3.7'
-  - DJANGO='django>=1.11.0,<1.12.0' DRF='djangorestframework>=3.7,<3.8'
-  - DJANGO='django>=2.0.0,<2.1.0' DRF='djangorestframework>=3.7,<3.8'
-before_install:
-  - pip install -U pytest
-  - pip install -r requirements-test.txt
+  - SESSION="test(drf='3.8', django='2.0')"
+  - SESSION="test(drf='3.9', django='2.0')"
+  - SESSION="test(drf='3.8', django='2.1')"
+  - SESSION="test(drf='3.9', django='2.1')"
+  - SESSION="test(drf='3.8', django='2.2')"
+  - SESSION="test(drf='3.9', django='2.2')"
 install:
-  - pip install $DJANGO $DRF
-  - pip install -e .
+  - pip install pipx
+  - pipx install nox
 script:
-  - py.test --flake8 --cov=./
-matrix:
-  exclude:
-    - python: "2.7"
-      env: DJANGO='django>=2.0.0,<2.1.0' DRF='djangorestframework>=3.7,<3.8'
-  allow_failures:
-    - env: DJANGO='https://github.com/django/django/archive/master.tar.gz'
+  - nox -s "$SESSION"
 after_success:
   - bash <(curl -s https://codecov.io/bash)
