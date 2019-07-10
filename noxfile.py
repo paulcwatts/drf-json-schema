@@ -23,12 +23,12 @@ if os.environ.get("CI"):
     # On Travis, we allow Travis to set the Python version
     nox_session = nox.session
 else:
-    nox_session = nox.session(python=["3.7"])
+    nox_session = nox.session(python=["3.6", "3.7"])
 
 
 @nox_session
-@nox.parametrize("django", ["2.2"])
-@nox.parametrize("drf", ["3.9"])
+@nox.parametrize("django", ["2.0", "2.1", "2.2"])
+@nox.parametrize("drf", ["3.8", "3.9"])
 def test(session, django, drf):
     install_pipenv_requirements(session)
     session.install(f"django=={django}")
