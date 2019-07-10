@@ -33,5 +33,12 @@ def test(session, django, drf):
     install_pipenv_requirements(session)
     session.install(f"django=={django}")
     session.install(f"djangorestframework=={drf}")
-    session.install(".")
-    session.run("py.test", "--flake8", "--cov=rest_framework_json_schema", "--cov-append")
+    session.run(
+        "py.test",
+        "--flake8",
+        "--cov=rest_framework_json_schema",
+        "--cov-append",
+        "rest_framework_json_schema/",
+        "tests/",
+        env={"PYTHONPATH": "."}
+    )

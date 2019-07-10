@@ -4,11 +4,11 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
 
-from rest_framework_json_schema.test_support.serializers import reset_data
-from rest_framework_json_schema.test_support.views import PaginateViewSet, NonJSONPaginateViewSet
+from tests.support.serializers import reset_data
+from tests.support.views import PaginateViewSet, NonJSONPaginateViewSet
 
 
-@override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
+@override_settings(ROOT_URLCONF='tests.support.urls')
 class JSONAPIPaginationTestCase(APISimpleTestCase):
     maxDiff = None
 
@@ -51,7 +51,7 @@ class JSONAPIPaginationTestCase(APISimpleTestCase):
         })
 
 
-@override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
+@override_settings(ROOT_URLCONF='tests.support.urls')
 class JSONAPINonPageTestCase(APISimpleTestCase):
     maxDiff = None
 

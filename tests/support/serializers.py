@@ -2,9 +2,9 @@ from copy import deepcopy
 
 from rest_framework import serializers
 
-from ..relations import JSONAPIRelationshipField
-from ..schema import ResourceObject
-from ..transforms import CamelCaseTransform
+from rest_framework_json_schema.relations import JSONAPIRelationshipField
+from rest_framework_json_schema.schema import ResourceObject
+from rest_framework_json_schema.transforms import CamelCaseTransform
 
 
 class BaseModel(object):
@@ -166,7 +166,7 @@ class TrackSerializer(serializers.Serializer):
     track_num = serializers.IntegerField()
     name = serializers.CharField()
     album = JSONAPIRelationshipField(
-        serializer='rest_framework_json_schema.test_support.serializers.AlbumSerializer',
+        serializer='tests.support.serializers.AlbumSerializer',
         queryset=get_albums())
 
     schema = TrackObject

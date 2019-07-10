@@ -3,10 +3,10 @@ from django.urls import reverse
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
 from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
 
-from rest_framework_json_schema.test_support.views import ArtistViewSet
+from tests.support.views import ArtistViewSet
 
 
-@override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
+@override_settings(ROOT_URLCONF='tests.support.urls')
 class JSONAPINegotiationTestCase(APISimpleTestCase):
     maxDiff = None
 

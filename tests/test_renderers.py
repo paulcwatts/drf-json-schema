@@ -4,11 +4,11 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
 
-from rest_framework_json_schema.test_support.serializers import reset_data
-from rest_framework_json_schema.test_support.views import ArtistViewSet, AlbumViewSet, TrackViewSet
+from tests.support.serializers import reset_data
+from tests.support.views import ArtistViewSet, AlbumViewSet, TrackViewSet
 
 
-@override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
+@override_settings(ROOT_URLCONF='tests.support.urls')
 class JSONAPIAttributesRendererTestCase(APISimpleTestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -123,7 +123,7 @@ class JSONAPIAttributesRendererTestCase(APISimpleTestCase):
         })
 
 
-@override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
+@override_settings(ROOT_URLCONF='tests.support.urls')
 class JSONAPIRelationshipsRendererTestCase(APISimpleTestCase):
     maxDiff = None
 

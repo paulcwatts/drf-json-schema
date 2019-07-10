@@ -11,7 +11,7 @@ from rest_framework_json_schema.transforms import CamelCaseTransform
 from rest_framework_json_schema.utils import parse_include
 
 
-@override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
+@override_settings(ROOT_URLCONF='tests.support.urls')
 class ResourceObjectTest(SimpleTestCase):
     maxDiff = None
 

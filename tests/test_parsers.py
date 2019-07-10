@@ -2,12 +2,12 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APISimpleTestCase, APIRequestFactory
 
-from rest_framework_json_schema.test_support.serializers import (
+from tests.support.serializers import (
     reset_data, get_artists, get_albums, get_tracks)
-from rest_framework_json_schema.test_support.views import ArtistViewSet, AlbumViewSet
+from tests.support.views import ArtistViewSet, AlbumViewSet
 
 
-@override_settings(ROOT_URLCONF='rest_framework_json_schema.test_support.urls')
+@override_settings(ROOT_URLCONF='tests.support.urls')
 class JSONAPIParserTestCase(APISimpleTestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
