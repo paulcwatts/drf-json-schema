@@ -1,18 +1,24 @@
 from django.http import Http404
 from rest_framework import viewsets
-from rest_framework.decorators import detail_route
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .serializers import (ArtistSerializer, AlbumSerializer, TrackSerializer,
-                          get_artists, get_albums, get_tracks)
 from rest_framework_json_schema.filters import get_query_filters
 from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
 from rest_framework_json_schema.pagination import JSONAPILimitOffsetPagination
 from rest_framework_json_schema.parsers import JSONAPIParser
 from rest_framework_json_schema.renderers import JSONAPIRenderer
 from rest_framework_json_schema.transforms import CamelCaseToUnderscoreTransform
+from .serializers import (ArtistSerializer, AlbumSerializer, TrackSerializer,
+                          get_artists, get_albums, get_tracks)
+
+try:
+    from rest_framework.decorators import action
+    action_route = action(detail=True, methods=["get"])
+except ImportError:
+    from rest_framework.decorators import detail_route
+    action_route = detail_route(methods=['get'])
 
 
 class BaseViewSet(viewsets.ModelViewSet):
@@ -69,12 +75,12 @@ class AlbumViewSet(BaseViewSet):
     def get_queryset(self):
         return get_albums()
 
-    @detail_route(methods=['get'])
+    @action_route
     def relationship_artist(self):
         # Not currently called, just reversed.
         return Response()
 
-    @detail_route(methods=['get'])
+    @action_route
     def related_artist(self):
         # Not currently called, just reversed.
         return Response()
