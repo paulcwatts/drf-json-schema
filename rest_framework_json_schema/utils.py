@@ -1,5 +1,3 @@
-
-
 def parse_include(include):
     """
     Parses an include parameter into its constituent paths.
@@ -22,10 +20,10 @@ def parse_include(include):
     }
     """
     result = {}
-    split = include.split(',')
+    split = include.split(",")
     for path in split:
         if path:
-            components = path.split('.')
+            components = path.split(".")
             level = result
             for c in components:
                 if c not in level:

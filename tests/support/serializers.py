@@ -54,28 +54,28 @@ class Track(BaseModel):
 
 
 INITIAL_ARTISTS = [
-    Artist(0, 'Miles', 'Davis'),
-    Artist(1, 'John', 'Coltrane'),
-    Artist(2, 'Charles', 'Mingus'),
-    Artist(3, 'Bill', 'Evans'),
-    Artist(4, 'Max', 'Roach'),
-    Artist(5, 'Sun', 'Ra')
+    Artist(0, "Miles", "Davis"),
+    Artist(1, "John", "Coltrane"),
+    Artist(2, "Charles", "Mingus"),
+    Artist(3, "Bill", "Evans"),
+    Artist(4, "Max", "Roach"),
+    Artist(5, "Sun", "Ra"),
 ]
 ARTISTS = None
 
 INITIAL_ALBUMS = [
-    Album(0, 'A Love Supreme', INITIAL_ARTISTS[1]),
-    Album(1, 'Birth of the Cool', INITIAL_ARTISTS[0]),
-    Album(2, 'Space is the Place', INITIAL_ARTISTS[5]),
-    Album(3, 'Unknown Artist', None)
+    Album(0, "A Love Supreme", INITIAL_ARTISTS[1]),
+    Album(1, "Birth of the Cool", INITIAL_ARTISTS[0]),
+    Album(2, "Space is the Place", INITIAL_ARTISTS[5]),
+    Album(3, "Unknown Artist", None),
 ]
 ALBUMS = None
 
 INITIAL_TRACKS = [
-    Track(0, 1, 'Jeru', INITIAL_ALBUMS[1]),
-    Track(1, 2, 'Moon Dreams', INITIAL_ALBUMS[1]),
-    Track(2, 3, 'Venus de Milo', INITIAL_ALBUMS[1]),
-    Track(3, 4, 'Deception', INITIAL_ALBUMS[1])
+    Track(0, 1, "Jeru", INITIAL_ALBUMS[1]),
+    Track(1, 2, "Moon Dreams", INITIAL_ALBUMS[1]),
+    Track(2, 3, "Venus de Milo", INITIAL_ALBUMS[1]),
+    Track(3, 4, "Deception", INITIAL_ALBUMS[1]),
 ]
 TRACKS = None
 
@@ -125,22 +125,22 @@ reset_data()
 
 
 class ArtistObject(ResourceObject):
-    type = 'artist'
-    attributes = ('first_name', 'last_name')
+    type = "artist"
+    attributes = ("first_name", "last_name")
     transformer = CamelCaseTransform
 
 
 class AlbumObject(ResourceObject):
-    type = 'album'
-    attributes = ('album_name',)
-    relationships = ('artist', 'tracks')
+    type = "album"
+    attributes = ("album_name",)
+    relationships = ("artist", "tracks")
     transformer = CamelCaseTransform
 
 
 class TrackObject(ResourceObject):
-    type = 'track'
-    attributes = ('track_num', 'name')
-    relationships = ('album',)
+    type = "track"
+    attributes = ("track_num", "name")
+    relationships = ("album",)
     transformer = CamelCaseTransform
 
 
@@ -152,7 +152,7 @@ class ArtistSerializer(serializers.Serializer):
     schema = ArtistObject
 
     def create(self, validated_data):
-        validated_data['id'] = get_artists().count()
+        validated_data["id"] = get_artists().count()
         get_artists().add(Artist(**validated_data))
         return validated_data
 
@@ -166,8 +166,8 @@ class TrackSerializer(serializers.Serializer):
     track_num = serializers.IntegerField()
     name = serializers.CharField()
     album = JSONAPIRelationshipField(
-        serializer='tests.support.serializers.AlbumSerializer',
-        queryset=get_albums())
+        serializer="tests.support.serializers.AlbumSerializer", queryset=get_albums()
+    )
 
     schema = TrackObject
 
@@ -175,13 +175,16 @@ class TrackSerializer(serializers.Serializer):
 class AlbumSerializer(serializers.Serializer):
     id = serializers.CharField(required=False)
     album_name = serializers.CharField()
-    artist = JSONAPIRelationshipField(serializer=ArtistSerializer, queryset=get_artists())
-    tracks = JSONAPIRelationshipField(serializer=TrackSerializer, many=True,
-                                      queryset=get_tracks())
+    artist = JSONAPIRelationshipField(
+        serializer=ArtistSerializer, queryset=get_artists()
+    )
+    tracks = JSONAPIRelationshipField(
+        serializer=TrackSerializer, many=True, queryset=get_tracks()
+    )
 
     schema = AlbumObject
 
     def create(self, validated_data):
-        validated_data['id'] = get_albums().count()
+        validated_data["id"] = get_albums().count()
         get_albums().add(Album(**validated_data))
         return validated_data

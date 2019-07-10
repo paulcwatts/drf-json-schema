@@ -10,6 +10,7 @@ class Context(object):
     """
     Collection of arguments needed for rendering/parsing.
     """
+
     def __init__(self, request, include=None, fields=None):
         self.request = request
         self.include = include or {}
@@ -35,9 +36,10 @@ class ResourceObject(BaseLinkedObject):
     """
     http://jsonapi.org/format/#document-resource-objects
     """
+
     # REQUIRED members
-    id = 'id'
-    type = 'unknown'
+    id = "id"
+    type = "unknown"
 
     # OPTIONAL members
     attributes = ()
@@ -59,6 +61,7 @@ class ResourceObject(BaseLinkedObject):
         # Normalize the relationships array to always be a tuple of (name, relobj)
         def _normalize_rel(rel):
             return (rel, RelationshipObject()) if isinstance(rel, str) else rel
+
         self.relationships = [_normalize_rel(rel) for rel in self.relationships]
 
         for (name, _rel) in self.relationships:
@@ -69,58 +72,65 @@ class ResourceObject(BaseLinkedObject):
         Parses a Resource Object representation into an internal representation.
         Verifies that the object is of the correct type.
         """
-        type = data.get('type')
+        type = data.get("type")
         if type != self.type:
-            raise TypeConflict('type %s is not the correct type for this resource' % type)
+            raise TypeConflict(
+                "type %s is not the correct type for this resource" % type
+            )
         result = OrderedDict()
-        id = data.get('id')
+        id = data.get("id")
         if id:
-            result['id'] = id
-        attributes = data.get('attributes')
+            result["id"] = id
+        attributes = data.get("attributes")
         if attributes:
-            result.update({
-                attr: attributes[self.transformed_names[attr]]
-                for attr in self.attributes if self.transformed_names[attr] in attributes
-            })
-        relationships = data.get('relationships')
+            result.update(
+                {
+                    attr: attributes[self.transformed_names[attr]]
+                    for attr in self.attributes
+                    if self.transformed_names[attr] in attributes
+                }
+            )
+        relationships = data.get("relationships")
         if relationships:
-            result.update({
-                name: rel.parse(relationships[self.transformed_names[name]], context)
-                for (name, rel) in self.relationships
-                if self.transformed_names[name] in relationships
-            })
+            result.update(
+                {
+                    name: rel.parse(
+                        relationships[self.transformed_names[name]], context
+                    )
+                    for (name, rel) in self.relationships
+                    if self.transformed_names[name] in relationships
+                }
+            )
         return result
 
     def render(self, data, context):
         """
         Renders data to a Resource Object representation.
         """
-        result = OrderedDict((
-            ('id', str(data[self.id])),
-            ('type', self.type)
-        ))
+        result = OrderedDict((("id", str(data[self.id])), ("type", self.type)))
         attributes = self.render_attributes(data, context)
         if attributes:
-            result['attributes'] = attributes
+            result["attributes"] = attributes
 
         relationships, included = self.render_relationships(data, context)
         if relationships:
-            result['relationships'] = relationships
+            result["relationships"] = relationships
 
         links = self.render_links(data, context)
         if links:
-            result['links'] = links
+            result["links"] = links
 
         meta = self.render_meta(data, context)
         if meta:
-            result['meta'] = meta
+            result["meta"] = meta
         return result, included
 
     def render_attributes(self, data, context):
         attributes = self.filter_by_fields(self.attributes, context.fields)
         return OrderedDict(
             (self.transformed_names[attr], self.from_data(data, attr))
-            for attr in attributes if attr in data
+            for attr in attributes
+            if attr in data
         )
 
     def render_relationships(self, data, context):
@@ -130,13 +140,17 @@ class ResourceObject(BaseLinkedObject):
         rel_keys = {rel[0] for rel in self.relationships}
         for key in context.include:
             if key not in rel_keys:
-                raise IncludeInvalid('Invalid relationship to include: %s' % key)
+                raise IncludeInvalid("Invalid relationship to include: %s" % key)
 
-        filtered = self.filter_by_fields(self.relationships, context.fields, lambda x: x[0])
+        filtered = self.filter_by_fields(
+            self.relationships, context.fields, lambda x: x[0]
+        )
         # Filter by missing values in the data
         filtered = (rel for rel in filtered if rel[0] in data)
         for (name, rel) in filtered:
-            relationship, rel_included = self.render_relationship(data, name, rel, context)
+            relationship, rel_included = self.render_relationship(
+                data, name, rel, context
+            )
             relationships[self.transformed_names[name]] = relationship
             included.extend(rel_included)
 
@@ -147,9 +161,7 @@ class ResourceObject(BaseLinkedObject):
         include_this = rel_name in context.include
         # Create a new context by going one level deeper into the include paths.
         rel_context = Context(
-            context.request,
-            context.include.get(rel_name, {}),
-            context.fields
+            context.request, context.include.get(rel_name, {}), context.fields
         )
         rel_data = self.from_data(data, rel_name)
         return rel.render(data, rel_data, rel_context, include_this)
@@ -168,15 +180,20 @@ class ResourceObject(BaseLinkedObject):
         type_fields = fields[self.type]
         # This is essentially an intersection, but we preserve the order
         # of the attributes/relationships specified by the schema.
-        return (name for name in names if self.transformed_names[name_fn(name)] in type_fields)
+        return (
+            name
+            for name in names
+            if self.transformed_names[name_fn(name)] in type_fields
+        )
 
 
 class ResourceIdObject(BaseLinkedObject):
     """
     http://jsonapi.org/format/#document-resource-identifier-objects
     """
+
     id = None
-    type = 'unknown'
+    type = "unknown"
     meta = None
 
     def __init__(self, **kwargs):
@@ -184,13 +201,10 @@ class ResourceIdObject(BaseLinkedObject):
             setattr(self, key, value)
 
     def render(self, request):
-        result = OrderedDict((
-            ('id', str(self.id)),
-            ('type', self.type)
-        ))
+        result = OrderedDict((("id", str(self.id)), ("type", self.type)))
         meta = self.render_meta(self, request)
         if meta:
-            result['meta'] = meta
+            result["meta"] = meta
         return result
 
     def get_schema(self):
@@ -228,38 +242,38 @@ class RelationshipObject(BaseLinkedObject):
 
         if not rel_data:
             # None or []
-            result['data'] = rel_data
+            result["data"] = rel_data
         elif isinstance(rel_data, ResourceIdObject):
-            result['data'] = rel_data.render(context.request)
+            result["data"] = rel_data.render(context.request)
             if include_this:
                 included.extend(self.render_included(rel_data, context))
         else:
             # Probably a list of resource objects
             if include_this:
-                result['data'] = []
+                result["data"] = []
                 for obj in rel_data:
-                    result['data'].append(obj.render(context.request))
+                    result["data"].append(obj.render(context.request))
                     included.extend(self.render_included(obj, context))
             else:
-                result['data'] = [obj.render(context.request) for obj in rel_data]
+                result["data"] = [obj.render(context.request) for obj in rel_data]
 
         links = self.render_links(obj_data, context)
         if links:
-            result['links'] = links
+            result["links"] = links
 
         meta = self.render_meta(obj_data, context)
         if meta:
-            result['meta'] = meta
+            result["meta"] = meta
         return result, included
 
     def parse(self, obj_data, context):
         # Unless the Schema provides it, there's no way to verify the type
         # of the relationship. So we just look for the ID and propagate it.
-        data = obj_data.get('data')
+        data = obj_data.get("data")
         if isinstance(data, list):
-            return [obj['id'] for obj in data]
+            return [obj["id"] for obj in data]
         elif isinstance(data, dict):
-            return data['id']
+            return data["id"]
 
 
 class LinkObject(object):
@@ -268,7 +282,7 @@ class LinkObject(object):
             setattr(self, key, value)
 
     def render(self, data, request):
-        raise NotImplementedError('Subclasses are required to implement this method.')
+        raise NotImplementedError("Subclasses are required to implement this method.")
 
 
 class UrlLink(LinkObject):

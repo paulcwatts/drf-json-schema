@@ -1,19 +1,18 @@
-from collections import OrderedDict
 import re
+from collections import OrderedDict
 
 from rest_framework.renderers import JSONRenderer
 
-from .schema import Context
 from .exceptions import NoSchema
+from .schema import Context
 from .utils import parse_include
 
-
-RX_FIELDS = re.compile(r'^fields\[([a-zA-Z0-9\-_]+)\]$')
+RX_FIELDS = re.compile(r"^fields\[([a-zA-Z0-9\-_]+)\]$")
 
 
 class JSONAPIRenderer(JSONRenderer):
-    media_type = 'application/vnd.api+json'
-    format = 'vnd.api+json'
+    media_type = "application/vnd.api+json"
+    format = "vnd.api+json"
     # You can specify top-level items here.
     meta = None
     jsonapi = None
@@ -33,9 +32,9 @@ class JSONAPIRenderer(JSONRenderer):
 
     def render_data(self, data, renderer_context, include):
         schema = self.get_schema(data, renderer_context)
-        assert schema, 'Unable to get schema class'
+        assert schema, "Unable to get schema class"
         fields = self.get_fields(renderer_context)
-        context = Context(renderer_context.get('request', None), include, fields)
+        context = Context(renderer_context.get("request", None), include, fields)
 
         if isinstance(data, dict):
             return self.render_obj(data, schema(), renderer_context, context)
@@ -50,7 +49,7 @@ class JSONAPIRenderer(JSONRenderer):
         """
         Returns whether we're trying to render an exception.
         """
-        return renderer_context['response'].exception
+        return renderer_context["response"].exception
 
     def get_schema(self, data, renderer_context):
         """
@@ -61,26 +60,26 @@ class JSONAPIRenderer(JSONRenderer):
         except AttributeError:
             raise NoSchema()
 
-        if not getattr(serializer, 'many', False):
+        if not getattr(serializer, "many", False):
             return serializer.schema
         else:
             return serializer.child.schema
 
     def get_include(self, renderer_context):
-        request = renderer_context.get('request', None)
+        request = renderer_context.get("request", None)
         if request:
-            return parse_include(request.query_params.get('include', ''))
+            return parse_include(request.query_params.get("include", ""))
         else:
             return {}
 
     def get_fields(self, renderer_context):
-        request = renderer_context.get('request', None)
+        request = renderer_context.get("request", None)
         fields = {}
         if request:
             for key, value in request.query_params.items():
                 m = RX_FIELDS.match(key)
                 if m:
-                    fields[m.group(1)] = value.split(',')
+                    fields[m.group(1)] = value.split(",")
         return fields
 
     def render(self, data, media_type=None, renderer_context=None):
@@ -90,7 +89,7 @@ class JSONAPIRenderer(JSONRenderer):
         to_include = self.get_include(renderer_context)
         rendered = OrderedDict()
         if self.jsonapi:
-            rendered['jsonapi'] = self.jsonapi
+            rendered["jsonapi"] = self.jsonapi
 
         meta = {}
         links = {}
@@ -99,32 +98,34 @@ class JSONAPIRenderer(JSONRenderer):
             meta.update(self.meta)
 
         if self.is_exception(data, renderer_context):
-            rendered['errors'] = self.render_exception(data, renderer_context)
+            rendered["errors"] = self.render_exception(data, renderer_context)
         else:
             try:
-                rendered_data, included = self.render_data(data, renderer_context, to_include)
+                rendered_data, included = self.render_data(
+                    data, renderer_context, to_include
+                )
                 if rendered_data is not None:
-                    rendered['data'] = rendered_data
+                    rendered["data"] = rendered_data
                 if included:
-                    rendered['included'] = included
+                    rendered["included"] = included
             except NoSchema:
                 # Because we don't know the type of this data, we can't include it as
                 # primary data.
-                meta['data'] = data
+                meta["data"] = data
 
-        data_meta = getattr(data, 'meta', None)
+        data_meta = getattr(data, "meta", None)
         if data_meta:
             meta.update(data_meta)
-        data_links = getattr(data, 'links', None)
+        data_links = getattr(data, "links", None)
         if data_links:
             links.update(data_links)
 
         if meta:
-            rendered['meta'] = meta
+            rendered["meta"] = meta
         if links:
-            rendered['links'] = links
+            rendered["links"] = links
 
-        return super(JSONAPIRenderer, self).render(rendered, media_type, renderer_context)
+        return super().render(rendered, media_type, renderer_context)
 
 
 class JSONAPITestRenderer(JSONRenderer):
@@ -133,5 +134,6 @@ class JSONAPITestRenderer(JSONRenderer):
     the JSON media type. This is used to specify fully-rendered JSON API
     requests in test code, but still be able to fully test parsers.
     """
-    media_type = 'application/vnd.api+json'
-    format = 'vnd.api+json'
+
+    media_type = "application/vnd.api+json"
+    format = "vnd.api+json"
