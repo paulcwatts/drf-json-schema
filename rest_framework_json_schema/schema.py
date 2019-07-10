@@ -61,7 +61,7 @@ class ResourceObject(BaseLinkedObject):
             return (rel, RelationshipObject()) if isinstance(rel, str) else rel
         self.relationships = [_normalize_rel(rel) for rel in self.relationships]
 
-        for (name, rel) in self.relationships:
+        for (name, _rel) in self.relationships:
             self.transformed_names[name] = transformer.transform(name)
 
     def parse(self, data, context):
