@@ -2,8 +2,7 @@ import re
 
 from .transforms import NullTransform
 
-
-FILTER = re.compile(r'^filter\[(\w+)\]$')
+FILTER = re.compile(r"^filter\[(\w+)\]$")
 
 
 def get_query_filters(params, transformer=None):

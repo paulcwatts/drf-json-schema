@@ -10,5 +10,6 @@ pytest-django = "*"
 pytest-flake8 = "*"
 flake8-bugbear = "*"
 nox = "*"
+pre-commit = "*"
 
 [packages]

@@ -14,15 +14,18 @@ class JSONAPIContentNegotiation(DefaultContentNegotiation):
     Accept header contains the JSON API media type and all instances of that
     media type are modified with media type parameters.
     """
+
     def get_accept_list(self, request):
         """
         This filters out any JSON API specification that includes media parameters.
         """
-        accept_list = super(JSONAPIContentNegotiation, self).get_accept_list(request)
+        accept_list = super().get_accept_list(request)
 
         def jsonapi_params(media_type_str):
             media_type = _MediaType(media_type_str)
             # We don't use _MediaType.match() because we want an *exact* match, without matching */*
-            return media_type.full_type == 'application/vnd.api+json' and media_type.params
+            return (
+                media_type.full_type == "application/vnd.api+json" and media_type.params
+            )
 
         return [accept for accept in accept_list if not jsonapi_params(accept)]

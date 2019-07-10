@@ -1,6 +1,7 @@
-import nox
-import subprocess
 import os
+import subprocess
+
+import nox
 
 
 # pipenv and tox don't interact very well, they seem to be highly
@@ -40,5 +41,11 @@ def test(session, django, drf):
         "--cov-append",
         "rest_framework_json_schema/",
         "tests/",
-        env={"PYTHONPATH": "."}
+        env={"PYTHONPATH": "."},
     )
+
+
+@nox.session
+def black(session):
+    session.install("black==19.3b0")
+    session.run("black", "--check", ".")

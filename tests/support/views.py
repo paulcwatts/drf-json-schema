@@ -10,15 +10,23 @@ from rest_framework_json_schema.pagination import JSONAPILimitOffsetPagination
 from rest_framework_json_schema.parsers import JSONAPIParser
 from rest_framework_json_schema.renderers import JSONAPIRenderer
 from rest_framework_json_schema.transforms import CamelCaseToUnderscoreTransform
-from .serializers import (ArtistSerializer, AlbumSerializer, TrackSerializer,
-                          get_artists, get_albums, get_tracks)
+from .serializers import (
+    ArtistSerializer,
+    AlbumSerializer,
+    TrackSerializer,
+    get_artists,
+    get_albums,
+    get_tracks,
+)
 
 try:
     from rest_framework.decorators import action
+
     action_route = action(detail=True, methods=["get"])
 except ImportError:
     from rest_framework.decorators import detail_route
-    action_route = detail_route(methods=['get'])
+
+    action_route = detail_route(methods=["get"])
 
 
 class BaseViewSet(viewsets.ModelViewSet):
@@ -32,10 +40,12 @@ class BaseViewSet(viewsets.ModelViewSet):
         try:
             return self.get_queryset()[self.kwargs[lookup_url_kwarg]]
         except IndexError:
-            raise Http404('Not found.')
+            raise Http404("Not found.")
 
     def filter_queryset(self, queryset):
-        filters = get_query_filters(self.request.query_params, CamelCaseToUnderscoreTransform())
+        filters = get_query_filters(
+            self.request.query_params, CamelCaseToUnderscoreTransform()
+        )
         for key, value in filters.items():
             queryset = [item for item in queryset if getattr(item, key) == value]
 
@@ -46,6 +56,7 @@ class ArtistViewSet(BaseViewSet):
     """
     A simple ViewSet for listing or retrieving artists.
     """
+
     serializer_class = ArtistSerializer
     # This is not testing pagination
     pagination_class = None
@@ -62,6 +73,7 @@ class NonJSONPaginateViewSet(ArtistViewSet):
     """
     Tests when a viewset is paginated but without a JSONAPI Paginator
     """
+
     pagination_class = LimitOffsetPagination
 
 
@@ -69,6 +81,7 @@ class AlbumViewSet(BaseViewSet):
     """
     A simple ViewSet for listing or retrieving albums.
     """
+
     serializer_class = AlbumSerializer
     pagination_class = None
 
@@ -90,6 +103,7 @@ class TrackViewSet(BaseViewSet):
     """
     A simple ViewSet for listing or retrieving tracks.
     """
+
     serializer_class = TrackSerializer
     pagination_class = None
 

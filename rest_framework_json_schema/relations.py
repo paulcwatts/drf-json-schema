@@ -1,5 +1,4 @@
 from django.utils.module_loading import import_string
-
 from rest_framework import serializers
 
 from .schema import ResourceIdObject
@@ -9,7 +8,7 @@ class ResourceIdField(ResourceIdObject):
     def __init__(self, serializer, instance, **kwargs):
         self.serializer = serializer
         self.instance = instance
-        super(ResourceIdField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def get_schema(self):
         return self.serializer.schema()
@@ -20,27 +19,27 @@ class ResourceIdField(ResourceIdObject):
 
 class JSONAPIRelationshipField(serializers.PrimaryKeyRelatedField):
     def __init__(self, **kwargs):
-        self.type = kwargs.pop('type', None)
-        self.serializer = kwargs.pop('serializer', None)
+        self.type = kwargs.pop("type", None)
+        self.serializer = kwargs.pop("serializer", None)
         self._serializer = None
         if not isinstance(self.serializer, str):
             self._serializer = self.serializer
 
-        assert self.type or self.serializer, (
-            'JSONAPIRelationshipField must either specify a `type` or `serializer.'
-        )
-        super(JSONAPIRelationshipField, self).__init__(**kwargs)
+        assert (
+            self.type or self.serializer
+        ), "JSONAPIRelationshipField must either specify a `type` or `serializer."
+        super().__init__(**kwargs)
 
     def use_pk_only_optimization(self):
         # We can use the pk-only optimization if the parent's object
         # is not included in the 'include' query parameter in some form.
-        request = self.context.get('request', None)
+        request = self.context.get("request", None)
         if not request:
             # To be on the safe side -- this usually happens when we
             # are in a multi-level include scenario.
             return False
 
-        include = request.query_params.get('include')
+        include = request.query_params.get("include")
         # Because we can't tell what "level" of inclusion we're at,
         # the only safe thing we can do is to turn off the optimization
         # if the include parameter exists.
@@ -60,7 +59,7 @@ class JSONAPIRelationshipField(serializers.PrimaryKeyRelatedField):
         return self.get_serializer().schema().type
 
     def to_representation(self, value):
-        id = super(JSONAPIRelationshipField, self).to_representation(value)
+        id = super().to_representation(value)
         serializer = self.get_serializer()
 
         if serializer:
