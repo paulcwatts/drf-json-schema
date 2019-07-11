@@ -1,3 +1,10 @@
+"""
+The schema objects are the workhorse of this project.
+
+They provide a DRF-independent way of defining a JSON API resource,
+which can be then used by DRF-serialized data to generate a JSON API response.
+"""
+
 from collections import OrderedDict
 from typing import (
     Any,
@@ -37,16 +44,21 @@ class Context:
         include: Optional[Dict] = None,
         fields: Optional[Dict] = None,
     ) -> None:
+        """Create an object."""
         self.request = request
         self.include = include or {}
         self.fields = fields or {}
 
 
 class BaseLinkedObject:
+    """Base class for objects that include links."""
+
     links: Sequence[Tuple[str, "LinkObject"]] = ()
     meta: Optional[Dict] = None
 
     def render_links(self, data: ObjDataType, context: Context) -> OrderedDict:
+        """Render link objects."""
+
         return OrderedDict(
             (link_name, link_obj.render(data, context.request))
             for (link_name, link_obj) in self.links
@@ -79,6 +91,7 @@ class ResourceObject(BaseLinkedObject):
     transformer: Type[Transform] = NullTransform
 
     def __init__(self, **kwargs: Any) -> None:
+        """Create a resource object."""
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -98,7 +111,7 @@ class ResourceObject(BaseLinkedObject):
 
     def parse(self, data: ObjDataType, context: Context) -> Dict:
         """
-        Parses a Resource Object representation into an internal representation.
+        Parse a Resource Object representation into an internal representation.
 
         Verifies that the object is of the correct type.
         """
@@ -134,7 +147,7 @@ class ResourceObject(BaseLinkedObject):
         return result
 
     def render(self, data: ObjDataType, context: Context) -> RenderResultType:
-        """Renders data to a Resource Object representation."""
+        """Render data to a Resource Object representation."""
         result: Dict[str, Dict] = OrderedDict(  # type: ignore
             (("id", str(data[self.id])), ("type", self.type))
         )
@@ -156,6 +169,7 @@ class ResourceObject(BaseLinkedObject):
         return result, included
 
     def render_attributes(self, data: Dict, context: Context) -> ObjDataType:
+        """Render model attributes to the output type."""
         attributes = self.filter_by_fields(self.attributes, context.fields, lambda x: x)
         return OrderedDict(
             (self.transformed_names[attr], self.from_data(data, attr))
@@ -164,6 +178,7 @@ class ResourceObject(BaseLinkedObject):
         )
 
     def render_relationships(self, data: Dict, context: Context) -> RenderResultType:
+        """Render model relationships to the output type, including included resources."""
         relationships: Dict[str, Dict] = OrderedDict()
         included = []
         # Validate that all top-level include keys are actually relationships
@@ -189,6 +204,7 @@ class ResourceObject(BaseLinkedObject):
     def render_relationship(
         self, data: Dict, rel_name: str, rel: "RelationshipObject", context: Context
     ) -> RenderResultType:
+        """Render a single relationship, including any included resources."""
         # This relationship is included if rel_name is in the include paths.
         include_this = rel_name in context.include
         # Create a new context by going one level deeper into the include paths.
@@ -199,6 +215,7 @@ class ResourceObject(BaseLinkedObject):
         return rel.render(data, rel_data, rel_context, include_this)
 
     def from_data(self, data: Dict, attr: str) -> Any:
+        """Get an attribute from a data dictionary."""
         # This is easy for now, but eventually we want to be able to specify
         # functions and the like
         return data[attr]
@@ -207,18 +224,20 @@ class ResourceObject(BaseLinkedObject):
     def filter_by_fields(
         self, names: Sequence[RelType], fields: Dict, name_fn: Callable[[RelType], str]
     ) -> Iterator[RelType]:
+        """Filter relationships by a list of field names."""
         ...
 
     @overload  # noqa: F811
     def filter_by_fields(
         self, names: Sequence[str], fields: Dict, name_fn: Callable[[str], str]
     ) -> Iterator[str]:
+        """Filter attributes by a list of field names."""
         ...
 
     def filter_by_fields(  # noqa: F811
         self, names: Sequence[Any], fields: Dict, name_fn: Callable[[Any], str]
     ) -> Iterator[Any]:
-        """Filters the list of names by the list of fields."""
+        """Filter attributes/relationships by a list of field names."""
         if self.type not in fields:
             return iter(names)
         type_fields = fields[self.type]
@@ -232,16 +251,22 @@ class ResourceObject(BaseLinkedObject):
 
 
 class ResourceIdObject(BaseLinkedObject):
-    """http://jsonapi.org/format/#document-resource-identifier-objects"""
+    """
+    Represents a JSON API Resource Identifier Object.
+
+    http://jsonapi.org/format/#document-resource-identifier-objects
+    """
 
     id: Optional[str] = None
     type: str = "unknown"
 
     def __init__(self, **kwargs: Any) -> None:
+        """Create an object."""
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def render(self, request: Request) -> Dict[str, Any]:
+        """Render object to JSON data."""
         result: Dict[str, Any] = OrderedDict(
             (("id", str(self.id)), ("type", self.type))
         )
@@ -252,6 +277,8 @@ class ResourceIdObject(BaseLinkedObject):
 
     def get_schema(self) -> ResourceObject:
         """
+        Return the schema for this resource.
+
         Subclasses can override this with a mechanism to get the schema for a resource object.
         This is optional, but required for including resources.
         """
@@ -259,6 +286,8 @@ class ResourceIdObject(BaseLinkedObject):
 
     def get_data(self) -> Dict[str, Any]:
         """
+        Return the serialized data for this resource.
+
         Subclasses can override this with a mechanism to get the rendered data for resource object.
         This is optional, but required for including resources.
         """
@@ -266,13 +295,21 @@ class ResourceIdObject(BaseLinkedObject):
 
 
 class RelationshipObject(BaseLinkedObject):
+    """
+    Represents a JSON API Relationship Object.
+
+    https://jsonapi.org/format/#document-resource-object-relationships
+    """
+
     def __init__(self, **kwargs: Any) -> None:
+        """Create an object."""
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def render_included(
         self, rel_data: "ResourceIdObject", context: Context
     ) -> List[Dict[str, Any]]:
+        """Render included resources."""
         # This recursively calls the resource's schema to render the full object.
         schema = rel_data.get_schema()
         obj, included = schema.render(rel_data.get_data(), context)
@@ -285,6 +322,7 @@ class RelationshipObject(BaseLinkedObject):
         context: Context,
         include_this: bool,
     ) -> RenderResultType:
+        """Render object to JSON data."""
         result: ObjDataType = OrderedDict()
         included: List[ObjDataType] = []
 
@@ -317,6 +355,7 @@ class RelationshipObject(BaseLinkedObject):
     def parse(
         self, obj_data: ObjDataType, context: Context
     ) -> Union[str, List[str], None]:
+        """Parse relationship object into an internal representation."""
         # Unless the Schema provides it, there's no way to verify the type
         # of the relationship. So we just look for the ID and propagate it.
         data = obj_data.get("data")
@@ -328,15 +367,25 @@ class RelationshipObject(BaseLinkedObject):
 
 
 class LinkObject:
+    """
+    Base class representing links objects.
+
+    https://jsonapi.org/format/#document-links
+    """
+
     def __init__(self, **kwargs: Any) -> None:
+        """Create an object."""
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def render(self, data: ObjDataType, request: Request) -> Any:
+        """Render object to JSON data."""
         raise NotImplementedError("Subclasses are required to implement this method.")
 
 
 class UrlLink(LinkObject):
+    """Represents a link object containing only the link's URL."""
+
     absolute: bool = True
     view_name: Optional[str] = None
     # Mappings from values in data to the 'args' parameter to reverse()
@@ -345,6 +394,7 @@ class UrlLink(LinkObject):
     url_kwargs: Dict[str, Any] = {}
 
     def render(self, data: ObjDataType, request: Request) -> Any:
+        """Render object to JSON data (URL link string)."""
         args = [data[arg] for arg in self.url_args]
         kwargs = {key: data[arg] for key, arg in self.url_kwargs.items()}
         link = reverse(self.view_name, args=args, kwargs=kwargs)

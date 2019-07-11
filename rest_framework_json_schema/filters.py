@@ -1,3 +1,5 @@
+"""Utilities and helpers for filtering."""
+
 import re
 from typing import Any, Dict, Optional
 
@@ -9,6 +11,12 @@ FILTER = re.compile(r"^filter\[(\w+)\]$")
 def get_query_filters(
     params: Dict[str, Any], transformer: Optional[Transform] = None
 ) -> Dict[str, Any]:
+    """
+    Parse JSON API filter query parameters and apply an optional transformation.
+
+    https://jsonapi.org/format/#fetching-filtering
+    """
+
     result = {}
     transformer = transformer or NullTransform()
 

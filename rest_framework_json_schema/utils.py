@@ -1,13 +1,15 @@
+"""Common utilities and helper functions."""
+
 from typing import Dict
 
 
 def parse_include(include: str) -> Dict[str, Dict]:
     """
-    Parses an include parameter into its constituent paths.
+    Parse an include parameter into its constituent paths.
+
     It returns a tree of include paths, for instance:
 
     a,a.b,a.c.d,e.f,g
-
     Returns:
     {
         'a': {

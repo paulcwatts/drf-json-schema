@@ -1,3 +1,5 @@
+"""JSON API Content Negotiation."""
+
 from typing import List
 
 from rest_framework.negotiation import DefaultContentNegotiation
@@ -7,7 +9,7 @@ from rest_framework.utils.mediatypes import _MediaType
 
 class JSONAPIContentNegotiation(DefaultContentNegotiation):
     """
-    This implements the following two MUSTs in the JSON API
+    Implement the following two MUSTs in the JSON API.
 
     Servers MUST respond with a 415 Unsupported Media Type status code if a
     request specifies the header Content-Type: application/vnd.api+json
@@ -16,12 +18,12 @@ class JSONAPIContentNegotiation(DefaultContentNegotiation):
     Servers MUST respond with a 406 Not Acceptable status code if a request's
     Accept header contains the JSON API media type and all instances of that
     media type are modified with media type parameters.
+
+    https://jsonapi.org/format/#content-negotiation
     """
 
     def get_accept_list(self, request: Request) -> List[str]:
-        """
-        This filters out any JSON API specification that includes media parameters.
-        """
+        """Filter any JSON API specification that includes media parameters."""
         accept_list = super().get_accept_list(request)
 
         def jsonapi_params(media_type_str: str) -> bool:

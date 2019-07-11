@@ -9,16 +9,27 @@ from rest_framework_json_schema.transforms import CamelCaseTransform
 
 
 class BaseModel:
+    """
+    Base test model.
+
+    We try to do what we can to fake a Django model for the purposes of
+    serialization, but not have to depend on a database for testing.
+
+    We also make sure that our code does not *require* models to be Django models.
+    """
+
     id: int
 
     @property
     def pk(self) -> int:
+        """Return the model primary key."""
         return self.id
 
     # This is used to fake a Django model for the purposes
     # of RelatedField.use_pk_only_optimization. It just
     # needs to return the ID value for foreign keys.
     def serializable_value(self, field_name: str) -> Any:
+        """Fake a Django model."""
         try:
             value = getattr(self, field_name)
             return value.id
@@ -27,17 +38,23 @@ class BaseModel:
 
 
 class Artist(BaseModel):
+    """An artist model."""
+
     def __init__(self, id: int, first_name: str, last_name: str) -> None:
+        """Create the object."""
         self.id = id
         self.first_name = first_name
         self.last_name = last_name
 
     def update(self, id: int, first_name: str, last_name: str) -> None:
+        """Update the object."""
         self.first_name = first_name
         self.last_name = last_name
 
 
 class Album(BaseModel):
+    """An album model."""
+
     def __init__(
         self,
         id: int,
@@ -45,17 +62,22 @@ class Album(BaseModel):
         artist: Optional[Artist],
         tracks: Optional[List["Track"]] = None,
     ):
+        """Create the object."""
         self.id = id
         self.album_name = album_name
         self.artist = artist
 
     @property
     def tracks(self) -> List["Track"]:
+        """Return the tracks for this album."""
         return [track for track in TRACKS if track.album.id == self.id]
 
 
 class Track(BaseModel):
+    """A track mode."""
+
     def __init__(self, id: int, track_num: int, name: str, album: Album) -> None:
+        """Create the object."""
         self.id = id
         self.track_num = track_num
         self.name = name
@@ -93,38 +115,50 @@ T = TypeVar("T")
 
 
 class QuerySet(Generic[T]):
+    """Fake a Django queryset."""
+
     def __init__(self, objs: List[T]) -> None:
+        """Initialize with a list of models."""
         self.objs = objs
 
     def __iter__(self) -> Iterator[T]:
+        """Iterate through all models."""
         return iter(self.objs)
 
     def get(self, pk: int) -> T:
+        """Get a model by ID."""
         return self.objs[pk]
 
     def add(self, obj: T) -> None:
+        """Add a model."""
         self.objs.append(obj)
 
     def count(self) -> int:
+        """Get a count of models (used by pagination)."""
         return len(self.objs)
 
     def __getitem__(self, item: int) -> T:
+        """Get an item (used in slicing)."""
         return self.objs[item]
 
 
 def get_artists() -> QuerySet:
+    """Get all artists."""
     return QuerySet(ARTISTS)
 
 
 def get_albums() -> QuerySet:
+    """Get all albums."""
     return QuerySet(ALBUMS)
 
 
 def get_tracks() -> QuerySet:
+    """Get all tracks."""
     return QuerySet(TRACKS)
 
 
 def reset_data() -> None:
+    """Reset test data."""
     global ARTISTS
     global ALBUMS
     global TRACKS
@@ -137,12 +171,16 @@ reset_data()
 
 
 class ArtistObject(ResourceObject):
+    """Resource object for artists."""
+
     type = "artist"
     attributes = ("first_name", "last_name")
     transformer = CamelCaseTransform
 
 
 class AlbumObject(ResourceObject):
+    """Resource object for albums."""
+
     type = "album"
     attributes = ("album_name",)
     relationships = ("artist", "tracks")
@@ -150,6 +188,8 @@ class AlbumObject(ResourceObject):
 
 
 class TrackObject(ResourceObject):
+    """Resource object for tracks."""
+
     type = "track"
     attributes = ("track_num", "name")
     relationships = ("album",)
@@ -157,6 +197,8 @@ class TrackObject(ResourceObject):
 
 
 class ArtistSerializer(serializers.Serializer):
+    """Serializer for artist models."""
+
     id = serializers.CharField(required=False)
     first_name = serializers.CharField()
     last_name = serializers.CharField()
@@ -164,16 +206,20 @@ class ArtistSerializer(serializers.Serializer):
     schema = ArtistObject
 
     def create(self, validated_data: Dict) -> Dict:
+        """Create an artist model."""
         validated_data["id"] = get_artists().count()
         get_artists().add(Artist(**validated_data))
         return validated_data
 
     def update(self, instance: Artist, validated_data: Dict) -> Artist:
+        """Update an artist model."""
         instance.update(**validated_data)
         return instance
 
 
 class TrackSerializer(serializers.Serializer):
+    """Serializer for track models."""
+
     id = serializers.CharField(required=False)
     track_num = serializers.IntegerField()
     name = serializers.CharField()
@@ -185,6 +231,8 @@ class TrackSerializer(serializers.Serializer):
 
 
 class AlbumSerializer(serializers.Serializer):
+    """Serializer for album models."""
+
     id = serializers.CharField(required=False)
     album_name = serializers.CharField()
     artist = JSONAPIRelationshipField(
@@ -197,6 +245,7 @@ class AlbumSerializer(serializers.Serializer):
     schema = AlbumObject
 
     def create(self, validated_data: Dict) -> Dict:
+        """Create an album model."""
         validated_data["id"] = get_albums().count()
         get_albums().add(Album(**validated_data))
         return validated_data

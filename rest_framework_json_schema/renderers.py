@@ -1,3 +1,5 @@
+"""Renderers are used to serialize a response into specific media types."""
+
 import re
 from collections import OrderedDict
 from typing import Any, Dict, Optional, Mapping, List, Union, Tuple, Type
@@ -12,6 +14,8 @@ RX_FIELDS = re.compile(r"^fields\[([a-zA-Z0-9\-_]+)\]$")
 
 
 class JSONAPIRenderer(JSONRenderer):
+    """Renderer which serializes to JSON API."""
+
     media_type: str = "application/vnd.api+json"
     format: str = "vnd.api+json"
     # You can specify top-level items here.
@@ -25,6 +29,7 @@ class JSONAPIRenderer(JSONRenderer):
         renderer_context: Mapping[str, Any],
         context: Context,
     ) -> RenderResultType:
+        """Render a single resource object as primary data."""
         return schema.render(obj, context)
 
     def render_list(
@@ -34,6 +39,11 @@ class JSONAPIRenderer(JSONRenderer):
         renderer_context: Mapping[str, Any],
         context: Context,
     ) -> Tuple[Union[ObjDataType, List[ObjDataType]], List[ObjDataType]]:
+        """
+        Render a list a resource objects as primary data.
+
+        In addition, render include resources if they are requested.
+        """
         primary = []
         included = []
         for obj in obj_list:
@@ -49,6 +59,7 @@ class JSONAPIRenderer(JSONRenderer):
         renderer_context: Mapping[str, Any],
         include: Dict,
     ) -> Tuple[Union[ObjDataType, List[ObjDataType], None], List[ObjDataType]]:
+        """Render primary data and included resources."""
         schema = self.get_schema(data, renderer_context)
         assert schema, "Unable to get schema class"
         fields = self.get_fields(renderer_context)
@@ -62,10 +73,11 @@ class JSONAPIRenderer(JSONRenderer):
         return None, []
 
     def render_exception(self, data: Any, renderer_context: Mapping[str, Any]) -> Any:
+        """Render an exception result."""
         return [data]
 
     def is_exception(self, data: Any, renderer_context: Mapping[str, Any]) -> bool:
-        """Returns whether we're trying to render an exception."""
+        """Return whether we're trying to render an exception."""
         return renderer_context["response"].exception
 
     def get_schema(
@@ -83,6 +95,7 @@ class JSONAPIRenderer(JSONRenderer):
             return serializer.child.schema
 
     def get_include(self, renderer_context: Mapping[str, Any]) -> Dict[str, Dict]:
+        """Return the parsed include parameter, if it exists."""
         request = renderer_context.get("request", None)
         if request:
             return parse_include(request.query_params.get("include", ""))
@@ -90,6 +103,7 @@ class JSONAPIRenderer(JSONRenderer):
             return {}
 
     def get_fields(self, renderer_context: Mapping[str, Any]) -> Dict[str, str]:
+        """Return the parsed fields parameters, if any exist."""
         request = renderer_context.get("request", None)
         fields = {}
         if request:
@@ -105,6 +119,8 @@ class JSONAPIRenderer(JSONRenderer):
         media_type: Optional[str] = None,
         renderer_context: Optional[Mapping[str, Any]] = None,
     ) -> bytes:
+        """Render `data` into JSON API, returning a bytestring."""
+
         if data is None:
             return bytes()
 
@@ -155,6 +171,8 @@ class JSONAPIRenderer(JSONRenderer):
 
 class JSONAPITestRenderer(JSONRenderer):
     """
+    Render test JSON.
+
     This is a simple wrapper of the original JSONRenderer that supports
     the JSON media type. This is used to specify fully-rendered JSON API
     requests in test code, but still be able to fully test parsers.
