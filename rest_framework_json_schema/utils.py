@@ -1,4 +1,7 @@
-def parse_include(include):
+from typing import Dict
+
+
+def parse_include(include: str) -> Dict[str, Dict]:
     """
     Parses an include parameter into its constituent paths.
     It returns a tree of include paths, for instance:
@@ -19,7 +22,7 @@ def parse_include(include):
         'g': {}
     }
     """
-    result = {}
+    result: Dict[str, Dict] = {}
     split = include.split(",")
     for path in split:
         if path:

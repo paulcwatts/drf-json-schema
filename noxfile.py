@@ -2,13 +2,14 @@ import os
 import subprocess
 
 import nox
+from nox.sessions import Session
 
 
 # pipenv and tox don't interact very well, they seem to be highly
 # dependent on what python/python environment you run nox in.
 # So instead of dealing with that, we just convert the lockfile to
 # a requirements file and install like that.
-def install_pipenv_requirements(session):
+def install_pipenv_requirements(session: Session) -> None:
     OUTFILE = os.path.join(".nox", "reqs.txt")
 
     session.install("pipenv")
@@ -30,7 +31,7 @@ else:
 @nox_session
 @nox.parametrize("django", ["2.0", "2.1", "2.2"])
 @nox.parametrize("drf", ["3.8", "3.9"])
-def test(session, django, drf):
+def test(session: Session, django: str, drf: str) -> None:
     install_pipenv_requirements(session)
     session.install(f"django=={django}")
     session.install(f"djangorestframework=={drf}")
@@ -46,6 +47,12 @@ def test(session, django, drf):
 
 
 @nox.session
-def black(session):
+def black(session: Session) -> None:
     session.install("black==19.3b0")
     session.run("black", "--check", ".")
+
+
+@nox.session
+def mypy(session: Session) -> None:
+    session.install("mypy")
+    session.run("mypy", ".")

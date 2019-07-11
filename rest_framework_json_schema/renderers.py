@@ -1,26 +1,39 @@
 import re
 from collections import OrderedDict
+from typing import Any, Dict, Optional, Mapping, List, Union, Tuple, Type
 
 from rest_framework.renderers import JSONRenderer
 
 from .exceptions import NoSchema
-from .schema import Context
+from .schema import Context, ResourceObject, ObjDataType, RenderResultType
 from .utils import parse_include
 
 RX_FIELDS = re.compile(r"^fields\[([a-zA-Z0-9\-_]+)\]$")
 
 
 class JSONAPIRenderer(JSONRenderer):
-    media_type = "application/vnd.api+json"
-    format = "vnd.api+json"
+    media_type: str = "application/vnd.api+json"
+    format: str = "vnd.api+json"
     # You can specify top-level items here.
-    meta = None
-    jsonapi = None
+    meta: Optional[Dict[str, Any]] = None
+    jsonapi: Optional[Any] = None
 
-    def render_obj(self, obj, schema, renderer_context, context):
+    def render_obj(
+        self,
+        obj: ObjDataType,
+        schema: ResourceObject,
+        renderer_context: Mapping[str, Any],
+        context: Context,
+    ) -> RenderResultType:
         return schema.render(obj, context)
 
-    def render_list(self, obj_list, schema, renderer_context, context):
+    def render_list(
+        self,
+        obj_list: List[ObjDataType],
+        schema: ResourceObject,
+        renderer_context: Mapping[str, Any],
+        context: Context,
+    ) -> Tuple[Union[ObjDataType, List[ObjDataType]], List[ObjDataType]]:
         primary = []
         included = []
         for obj in obj_list:
@@ -30,7 +43,12 @@ class JSONAPIRenderer(JSONRenderer):
 
         return primary, included
 
-    def render_data(self, data, renderer_context, include):
+    def render_data(
+        self,
+        data: Union[Dict, List],
+        renderer_context: Mapping[str, Any],
+        include: Dict,
+    ) -> Tuple[Union[ObjDataType, List[ObjDataType], None], List[ObjDataType]]:
         schema = self.get_schema(data, renderer_context)
         assert schema, "Unable to get schema class"
         fields = self.get_fields(renderer_context)
@@ -41,20 +59,19 @@ class JSONAPIRenderer(JSONRenderer):
 
         elif isinstance(data, list):
             return self.render_list(data, schema(), renderer_context, context)
+        return None, []
 
-    def render_exception(self, data, renderer_context):
+    def render_exception(self, data: Any, renderer_context: Mapping[str, Any]) -> Any:
         return [data]
 
-    def is_exception(self, data, renderer_context):
-        """
-        Returns whether we're trying to render an exception.
-        """
+    def is_exception(self, data: Any, renderer_context: Mapping[str, Any]) -> bool:
+        """Returns whether we're trying to render an exception."""
         return renderer_context["response"].exception
 
-    def get_schema(self, data, renderer_context):
-        """
-        Override this if you have a different way to get the schema.
-        """
+    def get_schema(
+        self, data: Any, renderer_context: Mapping[str, Any]
+    ) -> Type[ResourceObject]:
+        """Override this if you have a different way to get the schema."""
         try:
             serializer = data.serializer
         except AttributeError:
@@ -65,14 +82,14 @@ class JSONAPIRenderer(JSONRenderer):
         else:
             return serializer.child.schema
 
-    def get_include(self, renderer_context):
+    def get_include(self, renderer_context: Mapping[str, Any]) -> Dict[str, Dict]:
         request = renderer_context.get("request", None)
         if request:
             return parse_include(request.query_params.get("include", ""))
         else:
             return {}
 
-    def get_fields(self, renderer_context):
+    def get_fields(self, renderer_context: Mapping[str, Any]) -> Dict[str, str]:
         request = renderer_context.get("request", None)
         fields = {}
         if request:
@@ -82,17 +99,25 @@ class JSONAPIRenderer(JSONRenderer):
                     fields[m.group(1)] = value.split(",")
         return fields
 
-    def render(self, data, media_type=None, renderer_context=None):
+    def render(
+        self,
+        data: Any,
+        media_type: Optional[str] = None,
+        renderer_context: Optional[Mapping[str, Any]] = None,
+    ) -> bytes:
         if data is None:
             return bytes()
 
+        if not renderer_context:
+            return bytes()
+
         to_include = self.get_include(renderer_context)
-        rendered = OrderedDict()
+        rendered: Dict[str, Any] = OrderedDict()
         if self.jsonapi:
             rendered["jsonapi"] = self.jsonapi
 
-        meta = {}
-        links = {}
+        meta: Dict = {}
+        links: Dict[str, Any] = {}
 
         if self.meta:
             meta.update(self.meta)
@@ -135,5 +160,5 @@ class JSONAPITestRenderer(JSONRenderer):
     requests in test code, but still be able to fully test parsers.
     """
 
-    media_type = "application/vnd.api+json"
-    format = "vnd.api+json"
+    media_type: str = "application/vnd.api+json"
+    format: str = "vnd.api+json"

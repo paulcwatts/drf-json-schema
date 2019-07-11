@@ -8,6 +8,8 @@ JSON API Schema for Django REST Framework
   :target: https://codecov.io/gh/paulcwatts/drf-json-schema
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
+.. image:: http://www.mypy-lang.org/static/mypy_badge.svg
+    :target: http://mypy-lang.org/
 
 An implementation of the `JSON API <http://jsonapi.org/>`_ specification for Django REST Framework,
 specifically designed to be extensible and work with code that doesn't use ``ModelSerializer``.
