@@ -1,6 +1,8 @@
+from typing import Any, Sequence, Type, Optional
+
 from django.http import Http404
 from rest_framework import viewsets
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination, BasePagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
@@ -17,6 +19,10 @@ from .serializers import (
     get_artists,
     get_albums,
     get_tracks,
+    QuerySet,
+    Artist,
+    Album,
+    Track,
 )
 
 try:
@@ -35,14 +41,14 @@ class BaseViewSet(viewsets.ModelViewSet):
     renderer_classes = (JSONAPIRenderer,)
     content_negotiation_class = JSONAPIContentNegotiation
 
-    def get_object(self):
+    def get_object(self) -> Any:
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         try:
             return self.get_queryset()[self.kwargs[lookup_url_kwarg]]
         except IndexError:
             raise Http404("Not found.")
 
-    def filter_queryset(self, queryset):
+    def filter_queryset(self, queryset: Sequence) -> Sequence:
         filters = get_query_filters(
             self.request.query_params, CamelCaseToUnderscoreTransform()
         )
@@ -53,15 +59,13 @@ class BaseViewSet(viewsets.ModelViewSet):
 
 
 class ArtistViewSet(BaseViewSet):
-    """
-    A simple ViewSet for listing or retrieving artists.
-    """
+    """A simple ViewSet for listing or retrieving artists."""
 
     serializer_class = ArtistSerializer
     # This is not testing pagination
-    pagination_class = None
+    pagination_class: Optional[Type[BasePagination]] = None
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Artist]:
         return get_artists()
 
 
@@ -70,42 +74,36 @@ class PaginateViewSet(ArtistViewSet):
 
 
 class NonJSONPaginateViewSet(ArtistViewSet):
-    """
-    Tests when a viewset is paginated but without a JSONAPI Paginator
-    """
+    """Tests when a viewset is paginated but without a JSONAPI Paginator."""
 
     pagination_class = LimitOffsetPagination
 
 
 class AlbumViewSet(BaseViewSet):
-    """
-    A simple ViewSet for listing or retrieving albums.
-    """
+    """A simple ViewSet for listing or retrieving albums."""
 
     serializer_class = AlbumSerializer
     pagination_class = None
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Album]:
         return get_albums()
 
     @action_route
-    def relationship_artist(self):
+    def relationship_artist(self) -> Response:
         # Not currently called, just reversed.
         return Response()
 
     @action_route
-    def related_artist(self):
+    def related_artist(self) -> Response:
         # Not currently called, just reversed.
         return Response()
 
 
 class TrackViewSet(BaseViewSet):
-    """
-    A simple ViewSet for listing or retrieving tracks.
-    """
+    """A simple ViewSet for listing or retrieving tracks."""
 
     serializer_class = TrackSerializer
     pagination_class = None
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Track]:
         return get_tracks()

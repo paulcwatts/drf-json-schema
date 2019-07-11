@@ -11,5 +11,8 @@ pytest-flake8 = "*"
 flake8-bugbear = "*"
 nox = "*"
 pre-commit = "*"
+mypy = "*"
+# mypy = "==0.701"
+# django-stubs = "*"
 
 [packages]

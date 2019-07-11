@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import Any, Dict
 
 import pytest
 from rest_framework.request import Request
@@ -12,6 +13,7 @@ from rest_framework_json_schema.schema import (
     ResourceIdObject,
     LinkObject,
     UrlLink,
+    ObjDataType,
 )
 from rest_framework_json_schema.transforms import CamelCaseTransform
 from rest_framework_json_schema.utils import parse_include
@@ -79,7 +81,7 @@ def test_links(context: Context) -> None:
     """You can specify links which are methods on the object."""
 
     class ObjectLink(LinkObject):
-        def render(self, data, request):
+        def render(self, data: ObjDataType, request: Request) -> Any:
             return {"href": "/users/%s" % data["id"], "meta": {"something": "hello"}}
 
     class TestObject(ResourceObject):
@@ -369,10 +371,10 @@ def test_render_included(schema_request: Request) -> None:
     # This a faked ResourceIdObject that allows you the schema to not know about
     # the serializer directly.
     class ArtistLink(ResourceIdObject):
-        def get_schema(self):
+        def get_schema(self) -> ResourceObject:
             return ArtistObject()
 
-        def get_data(self):
+        def get_data(self) -> Dict[str, Any]:
             return {"id": self.id, "first_name": "John", "last_name": "Coltrane"}
 
     primary, included = AlbumObject().render(
@@ -412,23 +414,25 @@ def test_render_included_path(schema_request: Request) -> None:
         attributes = ("name",)
 
     class TrackLink(ResourceIdObject):
-        type = "track"
+        type: str = "track"
+        name: str = ""
 
-        def get_schema(self):
+        def get_schema(self) -> ResourceObject:
             return TrackObject()
 
-        def get_data(self):
+        def get_data(self) -> Dict[str, Any]:
             return {"id": self.id, "name": self.name}
 
     # This a faked ResourceIdObject that allows you the schema to not know about
     # the serializer directly.
     class AlbumLink(ResourceIdObject):
         type = "album"
+        name: str = ""
 
-        def get_schema(self):
+        def get_schema(self) -> ResourceObject:
             return AlbumObject()
 
-        def get_data(self):
+        def get_data(self) -> Dict[str, Any]:
             return {
                 "id": self.id,
                 "name": self.name,
@@ -529,10 +533,10 @@ def test_render_sparse_fields(schema_request: Request) -> None:
     # This a faked ResourceIdObject that allows the schema to not know about
     # the serializer directly.
     class ArtistLink(ResourceIdObject):
-        def get_schema(self):
+        def get_schema(self) -> ResourceObject:
             return ArtistObject()
 
-        def get_data(self):
+        def get_data(self) -> Dict[str, Any]:
             return {"id": self.id, "first_name": "John", "last_name": "Coltrane"}
 
     obj = {
@@ -616,10 +620,10 @@ def test_sparse_transformed_fields(schema_request: Request) -> None:
     # This a faked ResourceIdObject that allows the schema to not know about
     # the serializer directly.
     class ArtistLink(ResourceIdObject):
-        def get_schema(self):
+        def get_schema(self) -> ResourceObject:
             return ArtistObject()
 
-        def get_data(self):
+        def get_data(self) -> Dict[str, Any]:
             return {
                 "id": self.id,
                 "first_name": "John",

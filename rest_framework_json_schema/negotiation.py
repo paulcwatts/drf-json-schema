@@ -1,4 +1,7 @@
+from typing import List
+
 from rest_framework.negotiation import DefaultContentNegotiation
+from rest_framework.request import Request
 from rest_framework.utils.mediatypes import _MediaType
 
 
@@ -15,13 +18,13 @@ class JSONAPIContentNegotiation(DefaultContentNegotiation):
     media type are modified with media type parameters.
     """
 
-    def get_accept_list(self, request):
+    def get_accept_list(self, request: Request) -> List[str]:
         """
         This filters out any JSON API specification that includes media parameters.
         """
         accept_list = super().get_accept_list(request)
 
-        def jsonapi_params(media_type_str):
+        def jsonapi_params(media_type_str: str) -> bool:
             media_type = _MediaType(media_type_str)
             # We don't use _MediaType.match() because we want an *exact* match, without matching */*
             return (

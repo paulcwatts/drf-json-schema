@@ -1,21 +1,39 @@
-class NullTransform(object):
-    def transform(self, name):
+from abc import ABC, abstractmethod
+from typing import List
+
+
+class Transform(ABC):
+    """Provide the base interface for transforms."""
+
+    @abstractmethod
+    def transform(self, name: str) -> str:
+        ...
+
+
+class NullTransform(Transform):
+    """A transform that doesn't do anything."""
+
+    def transform(self, name: str) -> str:
         return name
 
 
-def _upper(name):
+def _upper(name: str) -> str:
     return name[0].upper() + name[1:] if name else name
 
 
-class CamelCaseTransform(object):
-    def transform(self, name):
+class CamelCaseTransform(Transform):
+    """Transform snake_underscore_case to camelCase."""
+
+    def transform(self, name: str) -> str:
         split = name.split("_")
         return split[0] + "".join([_upper(c) for c in split[1:]])
 
 
-class CamelCaseToUnderscoreTransform(object):
-    def transform(self, name):
-        words = []
+class CamelCaseToUnderscoreTransform(Transform):
+    """Transform camelCase to snake_underscore_case."""
+
+    def transform(self, name: str) -> str:
+        words: List[str] = []
         last = 0
 
         for i, c in enumerate(name):

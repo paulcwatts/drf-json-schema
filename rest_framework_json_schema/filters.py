@@ -1,11 +1,14 @@
 import re
+from typing import Any, Dict, Optional
 
-from .transforms import NullTransform
+from .transforms import NullTransform, Transform
 
 FILTER = re.compile(r"^filter\[(\w+)\]$")
 
 
-def get_query_filters(params, transformer=None):
+def get_query_filters(
+    params: Dict[str, Any], transformer: Optional[Transform] = None
+) -> Dict[str, Any]:
     result = {}
     transformer = transformer or NullTransform()
 
