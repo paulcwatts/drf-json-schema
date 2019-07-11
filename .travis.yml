@@ -10,8 +10,14 @@ env:
   - SESSION="test(drf='3.9', django='2.1')"
   - SESSION="test(drf='3.8', django='2.2')"
   - SESSION="test(drf='3.9', django='2.2')"
-  - SESSION="black"
-  - SESSION="mypy"
+matrix:
+  include:
+    - python: 3.7
+      env: SESSION="black"
+    - python: 3.7
+      env: SESSION="pydocstyle"
+    - python: 3.7
+      env: SESSION="mypy"
 install:
   - pip install pipx
   - pipx install nox

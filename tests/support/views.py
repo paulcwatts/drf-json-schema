@@ -36,12 +36,15 @@ except ImportError:
 
 
 class BaseViewSet(viewsets.ModelViewSet):
+    """Base view set for our "models"."""
+
     parser_classes = (JSONAPIParser,)
     permission_classes = (AllowAny,)
     renderer_classes = (JSONAPIRenderer,)
     content_negotiation_class = JSONAPIContentNegotiation
 
     def get_object(self) -> Any:
+        """Get an object using our faked queryset."""
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         try:
             return self.get_queryset()[self.kwargs[lookup_url_kwarg]]
@@ -49,6 +52,7 @@ class BaseViewSet(viewsets.ModelViewSet):
             raise Http404("Not found.")
 
     def filter_queryset(self, queryset: Sequence) -> Sequence:
+        """Filter our queryset using the JSON API filter parameter."""
         filters = get_query_filters(
             self.request.query_params, CamelCaseToUnderscoreTransform()
         )
@@ -66,10 +70,13 @@ class ArtistViewSet(BaseViewSet):
     pagination_class: Optional[Type[BasePagination]] = None
 
     def get_queryset(self) -> QuerySet[Artist]:
+        """Return the list of artists."""
         return get_artists()
 
 
 class PaginateViewSet(ArtistViewSet):
+    """Viewset that implements JSON API pagination."""
+
     pagination_class = JSONAPILimitOffsetPagination
 
 
@@ -86,15 +93,18 @@ class AlbumViewSet(BaseViewSet):
     pagination_class = None
 
     def get_queryset(self) -> QuerySet[Album]:
+        """Return the list of albums."""
         return get_albums()
 
     @action_route
     def relationship_artist(self) -> Response:
+        """Do nothing."""
         # Not currently called, just reversed.
         return Response()
 
     @action_route
     def related_artist(self) -> Response:
+        """Do nothing."""
         # Not currently called, just reversed.
         return Response()
 
@@ -106,4 +116,5 @@ class TrackViewSet(BaseViewSet):
     pagination_class = None
 
     def get_queryset(self) -> QuerySet[Track]:
+        """Return the list of tracks."""
         return get_tracks()

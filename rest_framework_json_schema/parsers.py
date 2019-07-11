@@ -1,3 +1,5 @@
+"""Parsers are used to parse the content of incoming HTTP requests."""
+
 from typing import IO, Any, Optional, Mapping, Dict, Type
 
 from django.utils.translation import ugettext_lazy as _
@@ -10,12 +12,20 @@ from .schema import Context, ResourceObject
 
 
 class Conflict(exceptions.APIException):
+    """
+    Status code for a JSON API resource conflict.
+
+    https://jsonapi.org/format/#crud-creating-responses-409
+    """
+
     status_code = status.HTTP_409_CONFLICT
     default_detail = _("Invalid resource type for endpoint.")
     default_code = "conflict"
 
 
 class JSONAPIParser(JSONParser):
+    """Parses JSON API-serialized data."""
+
     media_type = "application/vnd.api+json"
     renderer_class = JSONAPIRenderer
 
@@ -29,6 +39,8 @@ class JSONAPIParser(JSONParser):
         media_type: Optional[str] = None,
         parser_context: Optional[Mapping[str, Any]] = None,
     ) -> Dict[str, Any]:
+        """Given a stream to read from, return the parsed representation."""
+
         toplevel = super().parse(stream, media_type, parser_context)
         if not parser_context:
             raise ValueError("Parser context required")

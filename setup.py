@@ -1,3 +1,5 @@
+"""Setup script for drf-json-schema."""
+
 from setuptools import setup, find_packages
 
 import rest_framework_json_schema
