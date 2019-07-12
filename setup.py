@@ -1,13 +1,13 @@
 """Setup script for drf-json-schema."""
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 import rest_framework_json_schema
 
 setup(
     name="drf_json_schema",
     version=rest_framework_json_schema.__version__,
-    packages=find_packages(),
+    packages=["rest_framework_json_schema", "rest_framework_json_schema.migrations"],
     url="https://github.com/paulcwatts/drf-json-schema",
     license="MIT",
     author="Paul Watts",
@@ -15,16 +15,15 @@ setup(
     description="Extensible JSON API schema for Django Rest Framework",
     keywords=["django", "jsonapi", ""],
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Environment :: Web Environment",
-        "Framework :: Django :: 1.9",
-        "Framework :: Django :: 1.10",
+        "Framework :: Django :: 2.0",
+        "Framework :: Django :: 2.1",
+        "Framework :: Django :: 2.2",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     ],
