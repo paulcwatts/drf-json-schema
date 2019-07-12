@@ -39,7 +39,7 @@ def test_from_serializer() -> None:
         my_attr = serializers.CharField()
 
     result = from_serializer(MySerializer(), "mytype")
-    assert isinstance(result, type(ResourceObject))
+    assert issubclass(result, ResourceObject)
     assert result.type == "mytype"
     assert result.id == "id"
     assert result.attributes == ["int_attr", "my_attr"]
@@ -55,7 +55,7 @@ def test_from_model_serializer() -> None:
             fields = ["id", "my_str", "my_int"]
 
     result = from_serializer(MySerializer(), "mymodel")
-    assert isinstance(result, type(ResourceObject))
+    assert issubclass(result, ResourceObject)
     assert result.type == "mymodel"
     assert result.id == "id"
     assert result.attributes == ["my_str", "my_int"]
@@ -71,7 +71,7 @@ def test_model_relations() -> None:
             fields = ["id", "int_rel", "my_rel"]
 
     result = from_serializer(MySerializer(), "myrel")
-    assert isinstance(result, type(ResourceObject))
+    assert issubclass(result, ResourceObject)
     assert result.type == "myrel"
     assert result.id == "id"
     assert result.attributes == ["int_rel"]
@@ -87,7 +87,7 @@ def test_non_id_primary() -> None:
             fields = ["my_id", "my_int"]
 
     result = from_serializer(NonIdSerializer(), "nonid")
-    assert isinstance(result, type(ResourceObject))
+    assert issubclass(result, ResourceObject)
     assert result.type == "nonid"
     assert result.id == "my_id"
     assert result.attributes == ["my_int"]
@@ -102,7 +102,7 @@ def test_extra_params() -> None:
         my_attr = serializers.CharField()
 
     result = from_serializer(MySerializer(), "mytype", transformer=CamelCaseTransform)
-    assert isinstance(result, type(ResourceObject))
+    assert issubclass(result, ResourceObject)
     assert result.transformer == CamelCaseTransform
 
 
