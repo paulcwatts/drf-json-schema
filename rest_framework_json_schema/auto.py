@@ -109,7 +109,7 @@ def auto_schema(
         from rest_framework_json_schema.transforms import CamelCaseTransform
 
         def my_auto_schema(*args, **kwargs):
-            return auto_schema(*args, **kwargs, transform=CamelCaseTransform)
+            return auto_schema(*args, **kwargs, transformer=CamelCaseTransform)
         ``
 
     :param api_type: The JSON API resource type.
