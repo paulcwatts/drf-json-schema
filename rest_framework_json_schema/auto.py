@@ -40,7 +40,7 @@ def from_serializer(
         if isinstance(serializer, serializers.ModelSerializer):
             model = serializer.Meta.model
             for db_field in model._meta.get_fields():
-                if db_field.primary_key:
+                if getattr(db_field, "primary_key", False):
                     id_field = db_field.attname
                     break
 
