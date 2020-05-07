@@ -25,15 +25,15 @@ def install_pipenv_requirements(session: Session) -> None:
 
 
 if os.environ.get("CI"):
-    # On Travis, we allow Travis to set the Python version
+    # On CI, we allow it to set the Python version
     nox_session = nox.session
 else:
-    nox_session = nox.session(python=["3.6", "3.7"])
+    nox_session = nox.session(python=["3.6", "3.7", "3.8"])
 
 
 @nox_session
-@nox.parametrize("django", ["2.0", "2.1", "2.2"])
-@nox.parametrize("drf", ["3.8", "3.9"])
+@nox.parametrize("django", ["2.2", "3.0"])
+@nox.parametrize("drf", ["3.10", "3.11"])
 def test(session: Session, django: str, drf: str) -> None:
     """Run unit tests."""
     install_pipenv_requirements(session)
