@@ -16,13 +16,16 @@ from .serializers import (
     ArtistSerializer,
     AlbumSerializer,
     TrackSerializer,
+    NonDefaultIdSerializer,
     get_artists,
     get_albums,
     get_tracks,
+    get_non_default_ids,
     QuerySet,
     Artist,
     Album,
     Track,
+    NonDefaultId,
 )
 
 try:
@@ -118,3 +121,14 @@ class TrackViewSet(BaseViewSet):
     def get_queryset(self) -> QuerySet[Track]:
         """Return the list of tracks."""
         return get_tracks()
+
+
+class NonDefaultIdViewSet(BaseViewSet):
+    """A ViewSet to test non-default IDs."""
+
+    serializer_class = NonDefaultIdSerializer
+    pagination_class = None
+
+    def get_queryset(self) -> QuerySet[NonDefaultId]:
+        """Return the list of non default ID objects."""
+        return get_non_default_ids()
