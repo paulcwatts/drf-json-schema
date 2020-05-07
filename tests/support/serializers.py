@@ -3,6 +3,7 @@ from typing import Any, Optional, List, TypeVar, Iterator, Dict, Generic
 
 from rest_framework import serializers
 
+from rest_framework_json_schema.auto import auto_schema
 from rest_framework_json_schema.relations import JSONAPIRelationshipField
 from rest_framework_json_schema.schema import ResourceObject
 from rest_framework_json_schema.transforms import CamelCaseTransform
@@ -221,14 +222,6 @@ class TrackObject(ResourceObject):
     transformer = CamelCaseTransform
 
 
-class NonDefaultIdObject(ResourceObject):
-    """Resource object for non-default ID objects."""
-
-    type = "non-defaults"
-    id = "non_default_id"
-    attributes = ("name",)
-
-
 class ArtistSerializer(serializers.Serializer):
     """Serializer for artist models."""
 
@@ -290,7 +283,7 @@ class NonDefaultIdSerializer(serializers.Serializer):
     non_default_id = serializers.CharField()
     name = serializers.CharField()
 
-    schema = NonDefaultIdObject
+    schema = auto_schema("non-defaults", id_field="non_default_id")
 
     def create(self, validated_data: Dict) -> Dict:
         """Create an album model."""
