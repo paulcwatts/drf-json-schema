@@ -4,8 +4,13 @@ from django.urls import reverse
 from rest_framework.test import APIRequestFactory
 
 from tests.support.decorators import mark_urls
-from tests.support.serializers import get_artists, get_albums, get_tracks
-from tests.support.views import ArtistViewSet, AlbumViewSet
+from tests.support.serializers import (
+    get_artists,
+    get_albums,
+    get_tracks,
+    get_non_default_ids,
+)
+from tests.support.views import ArtistViewSet, AlbumViewSet, NonDefaultIdViewSet
 
 
 @mark_urls
@@ -103,3 +108,23 @@ def test_parse_relationships(factory: APIRequestFactory) -> None:
     album = get_albums()[4]
     assert album.album_name == "On the Corner"
     assert album.artist.id == artist.id
+
+
+@mark_urls
+def test_post_non_default_id(factory: APIRequestFactory) -> None:
+    """POSTing with a non-default ID works."""
+    non_default_list = NonDefaultIdViewSet.as_view({"post": "create"})
+    request = factory.post(
+        reverse("non-default-id-list"),
+        {
+            "data": {
+                "id": "foo",
+                "type": "non-defaults",
+                "attributes": {"name": "my name"},
+            }
+        },
+    )
+    response = non_default_list(request)
+    assert response.status_code == 201
+    models = get_non_default_ids()
+    assert models[0].non_default_id == "foo"

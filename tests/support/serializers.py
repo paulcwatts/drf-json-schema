@@ -84,6 +84,23 @@ class Track(BaseModel):
         self.album = album
 
 
+class NonDefaultId:
+    """An object with a non default ID."""
+
+    non_default_id: str
+    name: str
+
+    def __init__(self, non_default_id: str, name: str) -> None:
+        """Create the object."""
+        self.non_default_id = non_default_id
+        self.name = name
+
+    @property
+    def pk(self) -> str:
+        """Return the model primary key."""
+        return self.non_default_id
+
+
 INITIAL_ARTISTS: List[Artist] = [
     Artist(0, "Miles", "Davis"),
     Artist(1, "John", "Coltrane"),
@@ -109,6 +126,7 @@ INITIAL_TRACKS: List[Track] = [
     Track(3, 4, "Deception", INITIAL_ALBUMS[1]),
 ]
 TRACKS: List[Track] = []
+NON_DEFAULT_IDS: List[NonDefaultId] = []
 
 
 T = TypeVar("T")
@@ -157,14 +175,21 @@ def get_tracks() -> QuerySet:
     return QuerySet(TRACKS)
 
 
+def get_non_default_ids() -> QuerySet:
+    """Get all tracks."""
+    return QuerySet(NON_DEFAULT_IDS)
+
+
 def reset_data() -> None:
     """Reset test data."""
     global ARTISTS
     global ALBUMS
     global TRACKS
+    global NON_DEFAULT_IDS
     ARTISTS = deepcopy(INITIAL_ARTISTS)
     ALBUMS = deepcopy(INITIAL_ALBUMS)
     TRACKS = deepcopy(INITIAL_TRACKS)
+    NON_DEFAULT_IDS = deepcopy(NON_DEFAULT_IDS)
 
 
 reset_data()
@@ -194,6 +219,14 @@ class TrackObject(ResourceObject):
     attributes = ("track_num", "name")
     relationships = ("album",)
     transformer = CamelCaseTransform
+
+
+class NonDefaultIdObject(ResourceObject):
+    """Resource object for non-default ID objects."""
+
+    type = "non-defaults"
+    id = "non_default_id"
+    attributes = ("name",)
 
 
 class ArtistSerializer(serializers.Serializer):
@@ -248,4 +281,18 @@ class AlbumSerializer(serializers.Serializer):
         """Create an album model."""
         validated_data["id"] = get_albums().count()
         get_albums().add(Album(**validated_data))
+        return validated_data
+
+
+class NonDefaultIdSerializer(serializers.Serializer):
+    """Serializer for non default IDs models."""
+
+    non_default_id = serializers.CharField()
+    name = serializers.CharField()
+
+    schema = NonDefaultIdObject
+
+    def create(self, validated_data: Dict) -> Dict:
+        """Create an album model."""
+        get_non_default_ids().add(NonDefaultId(**validated_data))
         return validated_data

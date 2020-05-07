@@ -123,7 +123,7 @@ class ResourceObject(BaseLinkedObject):
         result: OrderedDict = OrderedDict()
         id = data.get("id")
         if id:
-            result["id"] = id
+            result[self.id] = id
         attributes = data.get("attributes")
         if attributes:
             result.update(
