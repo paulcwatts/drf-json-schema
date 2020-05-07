@@ -148,8 +148,8 @@ class ResourceObject(BaseLinkedObject):
 
     def render(self, data: ObjDataType, context: Context) -> RenderResultType:
         """Render data to a Resource Object representation."""
-        result: Dict[str, Dict] = OrderedDict(  # type: ignore
-            (("id", str(data[self.id])), ("type", self.type))
+        result: Dict[str, Dict] = OrderedDict(
+            (("id", str(data[self.id])), ("type", self.type))  # type: ignore
         )
         attributes = self.render_attributes(data, context)
         if attributes:
@@ -220,21 +220,21 @@ class ResourceObject(BaseLinkedObject):
         # functions and the like
         return data[attr]
 
-    @overload  # noqa: F811
+    @overload
     def filter_by_fields(
         self, names: Sequence[RelType], fields: Dict, name_fn: Callable[[RelType], str]
     ) -> Iterator[RelType]:
         """Filter relationships by a list of field names."""
         ...
 
-    @overload  # noqa: F811
+    @overload
     def filter_by_fields(
         self, names: Sequence[str], fields: Dict, name_fn: Callable[[str], str]
     ) -> Iterator[str]:
         """Filter attributes by a list of field names."""
         ...
 
-    def filter_by_fields(  # noqa: F811
+    def filter_by_fields(
         self, names: Sequence[Any], fields: Dict, name_fn: Callable[[Any], str]
     ) -> Iterator[Any]:
         """Filter attributes/relationships by a list of field names."""
