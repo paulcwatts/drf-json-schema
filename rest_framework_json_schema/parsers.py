@@ -31,7 +31,7 @@ class JSONAPIParser(JSONParser):
 
     def get_schema(self, parser_context: Mapping[str, Any]) -> Type[ResourceObject]:
         """Override this if this isn't the way you back to your schema."""
-        return parser_context["view"].serializer_class().schema
+        return parser_context["view"].get_serializer().schema
 
     def parse(
         self,
