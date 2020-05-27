@@ -5,6 +5,7 @@ from rest_framework import viewsets
 from rest_framework.pagination import LimitOffsetPagination, BasePagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 
 from rest_framework_json_schema.filters import get_query_filters
 from rest_framework_json_schema.negotiation import JSONAPIContentNegotiation
@@ -92,12 +93,15 @@ class NonJSONPaginateViewSet(ArtistViewSet):
 class AlbumViewSet(BaseViewSet):
     """A simple ViewSet for listing or retrieving albums."""
 
-    serializer_class = AlbumSerializer
     pagination_class = None
 
     def get_queryset(self) -> QuerySet[Album]:
         """Return the list of albums."""
         return get_albums()
+
+    def get_serializer(self, *args: Any, **kwargs: Any) -> BaseSerializer:
+        """Test the use of dynamic serializers with the parser."""
+        return AlbumSerializer(*args, **kwargs)
 
     @action_route
     def relationship_artist(self) -> Response:
