@@ -28,12 +28,12 @@ if os.environ.get("CI"):
     # On CI, we allow it to set the Python version
     nox_session = nox.session
 else:
-    nox_session = nox.session(python=["3.6", "3.7", "3.8"])
+    nox_session = nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 
 
 @nox_session
-@nox.parametrize("django", ["2.2", "3.0"])
-@nox.parametrize("drf", ["3.10", "3.11"])
+@nox.parametrize("django", ["2.2", "3.1"])
+@nox.parametrize("drf", ["3.11", "3.12"])
 def test(session: Session, django: str, drf: str) -> None:
     """Run unit tests."""
     install_pipenv_requirements(session)
@@ -53,7 +53,7 @@ def test(session: Session, django: str, drf: str) -> None:
 @nox.session
 def black(session: Session) -> None:
     """Check black."""
-    session.install("black==19.3b0")
+    session.install("black==21.5b2")
     session.run("black", "--check", ".")
 
 
