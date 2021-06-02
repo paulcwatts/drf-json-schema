@@ -90,6 +90,8 @@ class ResourceObject(BaseLinkedObject):
     relationships: Sequence[RelOptType] = ()
     transformer: Type[Transform] = NullTransform
 
+    norm_relationships: Sequence[RelType]
+
     def __init__(self, **kwargs: Any) -> None:
         """Create a resource object."""
         for key, value in kwargs.items():
@@ -104,9 +106,11 @@ class ResourceObject(BaseLinkedObject):
         def _normalize_rel(rel: RelOptType) -> RelType:
             return (rel, RelationshipObject()) if isinstance(rel, str) else rel
 
-        self.relationships = [_normalize_rel(rel) for rel in self.relationships]
+        self.relationships = self.norm_relationships = [
+            _normalize_rel(rel) for rel in self.relationships
+        ]
 
-        for (name, _rel) in self.relationships:
+        for (name, _rel) in self.norm_relationships:
             self.transformed_names[name] = transformer.transform(name)
 
     def parse(self, data: ObjDataType, context: Context) -> Dict:
@@ -137,10 +141,10 @@ class ResourceObject(BaseLinkedObject):
         if relationships:
             result.update(
                 {
-                    name: cast(RelationshipObject, rel).parse(
+                    name: rel.parse(
                         relationships[self.transformed_names[name]], context
                     )
-                    for (name, rel) in self.relationships
+                    for (name, rel) in self.norm_relationships
                     if self.transformed_names[name] in relationships
                 }
             )
@@ -224,14 +228,12 @@ class ResourceObject(BaseLinkedObject):
     def filter_by_fields(
         self, names: Sequence[RelType], fields: Dict, name_fn: Callable[[RelType], str]
     ) -> Iterator[RelType]:
-        """Filter relationships by a list of field names."""
         ...
 
     @overload
     def filter_by_fields(
         self, names: Sequence[str], fields: Dict, name_fn: Callable[[str], str]
     ) -> Iterator[str]:
-        """Filter attributes by a list of field names."""
         ...
 
     def filter_by_fields(

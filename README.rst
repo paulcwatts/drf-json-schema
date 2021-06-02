@@ -16,7 +16,7 @@ Tested with:
 
 * Python 3.6+
 * Django 2.2, 3.11+ 
-* Django REST Framework: 3.9+
+* Django REST Framework: 3.11+
 
 Development
 ===========

@@ -4,7 +4,8 @@ from django.apps import AppConfig
 
 
 class DrfJsonConfig(AppConfig):
-    """App config.
+    """
+    App config.
 
     Reference: `Django applications <https://docs.djangoproject.com/en/3.2/ref/applications/>`
 
